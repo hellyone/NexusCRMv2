@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nexus OS 🚀
 
-## Getting Started
+Sistema Integrado de Gestão para Assistência Técnica e Manutenção Industrial.
+Desenvolvido com **Next.js 16**, **React 19**, **TailwindCSS** e **Prisma**.
 
-First, run the development server:
+## 📋 Sobre o Projeto
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+O **Nexus OS** é uma plataforma completa para gerenciamento de ordens de serviço (OS), focado em empresas de manutenção industrial e assistência técnica. O sistema centraliza o controle de clientes, equipamentos, estoques, técnicos e serviços financeiros.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Principais Módulos
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+*   **🛠️ Ordens de Serviço (OS)**: Abertura inteligente de chamados (Interno/Externo), rastreabilidade por Serial Number, e fluxo de status (Aberto -> Em Andamento -> Finalizado).
+*   **🏭 Gestão de Ativos**: Cadastro detalhado de equipamentos industriais (Torno CNC, Injetoras, PLCs) com histórico de manutenção e garantias.
+*   **📦 Controle de Estoque**: Gestão de peças com controle de entrada/saída, separação por estoque de Venda vs. Consumo e baixa automática em OS.
+*   **👥 CRM e Equipe**: Cadastro completo de clientes (PJ/PF) e gestão de técnicos com controle de especialidades (Eletrônica, Mecânica, etc.).
+*   **📊 Financeiro e KPIs**: Dashboard com indicadores de performance, faturamento e alertas de estoque baixo.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🚀 Tecnologias Utilizadas
 
-## Learn More
+*   **Frontend**: Next.js 16 (App Router), React 19, TailwindCSS, Lucide Icons, Shadcn/UI.
+*   **Backend**: Server Actions (Next.js), Prisma ORM.
+*   **Banco de Dados**: SQLite (Desenvolvimento) / PostgreSQL (Produção - Recomendado).
+*   **Segurança**: NextAuth.js (v5) para autenticação e controle de acesso.
+*   **PDF**: @react-pdf/renderer para geração de laudos técnicos.
 
-To learn more about Next.js, take a look at the following resources:
+## ⚙️ Pré-requisitos
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+*   Node.js 20.x ou superior.
+*   NPM ou PNPM.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🔧 Instalação e Configuração
 
-## Deploy on Vercel
+1.  **Clone o repositório:**
+    ```bash
+    git clone https://github.com/hellyone/nexus-os.git
+    cd nexus-os
+    ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2.  **Instale as dependências:**
+    ```bash
+    npm install
+    ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+3.  **Configuração de Ambiente:**
+    Crie um arquivo `.env` na raiz do projeto com as chaves necessárias (veja `.env.example` se houver, ou use o template abaixo):
+    ```env
+    DATABASE_URL="file:./dev.db"
+    AUTH_SECRET="sua-chave-secreta-aqui"
+    NEXT_PUBLIC_APP_URL="http://localhost:3000"
+    ```
+
+4.  **Configuração do Banco de Dados:**
+    ```bash
+    npx prisma generate
+    npx prisma db push
+    ```
+
+5.  **Executar o Projeto:**
+    ```bash
+    npm run dev
+    ```
+    Acesse [http://localhost:3000](http://localhost:3000).
+
+## 📱 Funcionalidades Específicas
+
+### 🔧 Modo Assistência Técnica (Campo)
+O sistema possui uma interface otimizada para técnicos de campo (`/field`), com foco em:
+*   Abertura rápida de OS.
+*   Preenchimento inteligente de endereço (CEP).
+*   Funcionamento otimizado para mobile.
+
+### 📄 Relatórios Técnicos
+Geração automática de laudos técnicos em PDF com diagnóstico, solução, peças utilizadas e valores.
+
+## 📞 Suporte ou Contato
+
+Desenvolvido por **Guilherme**.
+Para dúvidas ou suporte, entre em contato via issues no GitHub.
