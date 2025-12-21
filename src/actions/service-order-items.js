@@ -37,15 +37,23 @@ export async function recalculateServiceOrderTotal(id) {
 }
 
 // --- Status Workflow ---
-export async function updateServiceOrderStatus(id, newStatus, notes = null) {
+export async function updateServiceOrderStatus(id, newStatus, notes = null, executionDeadline = null) {
     const session = await auth();
+    const userRole = session?.user?.role || 'GUEST';
     const userId = session?.user?.id ? parseInt(session.user.id) : null;
 
     const os = await prisma.serviceOrder.findUnique({ where: { id: parseInt(id) } });
     if (!os) return { error: 'OS não encontrada.' };
 
-    if (!canTransition(os.status, newStatus)) {
-        return { error: `Transição inválida de ${os.status} para ${newStatus}` };
+    if (!canTransition(os.status, newStatus, userRole)) {
+        return { error: `Você não tem permissão para esta transição (${os.status} -> ${newStatus}) ou ela é inválida.` };
+    }
+
+    // Validação de Laudo Técnico para finalizar análise
+    if (newStatus === 'WAITING_APPROVAL' && userRole.startsWith('TECH')) {
+        if (!os.diagnosis?.trim() || !os.solution?.trim()) {
+            return { error: 'O diagnóstico e a solução devem estar preenchidos para finalizar a análise técnica.' };
+        }
     }
 
     const data = { status: newStatus };
@@ -57,6 +65,9 @@ export async function updateServiceOrderStatus(id, newStatus, notes = null) {
     }
     if (newStatus === 'FINISHED' && !os.finishedAt) {
         data.finishedAt = now;
+    }
+    if (newStatus === 'APPROVED' && executionDeadline) {
+        data.executionDeadline = new Date(executionDeadline);
     }
 
     // Use transaction to ensure both update and history are saved
@@ -86,6 +97,7 @@ export async function updateServiceOrderStatus(id, newStatus, notes = null) {
 
     revalidatePath(`/service-orders/${id}`);
     revalidatePath('/service-orders');
+    revalidatePath('/commercial');
     return { success: true };
 }
 

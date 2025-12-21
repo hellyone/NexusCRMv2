@@ -1,15 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { updateServiceOrderHeader, updateServiceOrderStatus } from '@/actions/service-orders'; // We need status action export
 // Oops, logic for status update is in 'service-order-items.js' or 'service-orders.js'? 
 // I put `updateServiceOrderStatus` in `actions/service-order-items.js` previously. 
 // I should move/import correctly.
 import { updateServiceOrderStatus as updateStatusAction } from '@/actions/service-order-items';
-import { SERVICE_ORDER_STATUS, PRIORITY_OPTIONS, ALLOWED_TRANSITIONS } from '@/utils/status-machine';
-import { Save, AlertTriangle, CheckCircle, Play, Pause, XCircle, Clock, Microscope, MapPin, FileText, Package } from 'lucide-react';
+import { SERVICE_ORDER_STATUS, PRIORITY_OPTIONS, ALLOWED_TRANSITIONS, canTransition } from '@/utils/status-machine';
+import { Save, AlertTriangle, CheckCircle, Play, Pause, XCircle, Clock, Microscope, MapPin, FileText, Package, Activity, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useServiceOrderActions } from '@/context/ServiceOrderActionContext';
 
-export default function OsGeneralTab({ os }) {
+export default function OsGeneralTab({ os, user }) {
+    const router = useRouter();
+    const userRole = user?.role || 'GUEST';
+    const isCommercial = ['ADMIN', 'BACKOFFICE'].includes(userRole);
+    const isTech = userRole.startsWith('TECH');
+    const isAdmin = userRole === 'ADMIN';
+
+    // Auto-refresh every 30 seconds to catch status changes from other users
+    useEffect(() => {
+        const interval = setInterval(() => {
+            router.refresh();
+        }, 30000);
+        return () => clearInterval(interval);
+    }, [router]);
+
     const [formData, setFormData] = useState({
         reportedDefect: os.reportedDefect || '',
         diagnosis: os.diagnosis || '',
@@ -34,191 +51,394 @@ export default function OsGeneralTab({ os }) {
         // We reuse the update header action
         await updateServiceOrderHeader(os.id, payload);
         setLoading(false);
+        router.refresh();
     };
 
-    // Calculate allowed actions based on current status
+    const { registerAction, unregisterAction } = useServiceOrderActions();
+
+    useEffect(() => {
+        const actionId = 'save-os-header';
+        registerAction(actionId, (
+            <button
+                onClick={handleSave}
+                className="btn btn-primary btn-sm shadow-md hover:scale-105 transition-all gap-2 px-6"
+                disabled={loading}
+            >
+                {loading ? <span className="loading loading-spinner loading-xs"></span> : <Save size={16} />}
+                {loading ? 'Salvando...' : 'Salvar Dados'}
+            </button>
+        ));
+
+        return () => unregisterAction(actionId);
+    }, [registerAction, unregisterAction, loading]); // Update whenever loading state changes
+
+    const [executionDeadline, setExecutionDeadline] = useState('');
+
+    // Calculate allowed actions based on current status and role
     const handleStatusChange = async (newStatus) => {
-        if (!confirm(`Deseja alterar o status para ${SERVICE_ORDER_STATUS[newStatus]}?`)) return;
+        // Validação adicional no frontend para técnicos
+        if (newStatus === 'WAITING_APPROVAL' && isTech) {
+            if (!formData.diagnosis?.trim() || !formData.solution?.trim()) {
+                alert('O diagnóstico e a solução devem estar preenchidos para finalizar a análise técnica.');
+                return;
+            }
+        }
+
+        if (newStatus === 'APPROVED' && !executionDeadline && isCommercial) {
+            alert('Por favor, informe a data máxima para finalização do serviço.');
+            return;
+        }
+
+        const actionMsg = newStatus === 'WAITING_APPROVAL' ? 'Finalizar análise técnica e enviar para o comercial?' : `Deseja alterar o status para ${SERVICE_ORDER_STATUS[newStatus]}?`;
+        if (!confirm(actionMsg)) return;
 
         setStatusLoading(true);
-        const res = await updateStatusAction(os.id, newStatus);
+        const res = await updateStatusAction(os.id, newStatus, null, executionDeadline);
         if (res.error) alert(res.error);
         setStatusLoading(false);
     };
 
-    const allowed = ALLOWED_TRANSITIONS[os.status] || [];
+    const allowed = (ALLOWED_TRANSITIONS[os.status] || []).filter(status => canTransition(os.status, status, userRole));
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column: Technical Report & Logistics */}
             <div className="lg:col-span-2 space-y-6">
 
-                {/* Logistics / Type Info Card */}
-                <div className={`p-4 rounded-xl border-l-4 flex justify-between items-center ${os.serviceLocation === 'EXTERNAL' ? 'bg-orange-50 border-orange-500' : 'bg-blue-50 border-blue-500'}`}>
+                {/* Section Header */}
+                <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
                     <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${os.serviceLocation === 'EXTERNAL' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
-                            {os.serviceLocation === 'EXTERNAL' ? <MapPin size={24} /> : <Microscope size={24} />}
+                        <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                            <FileText size={20} />
                         </div>
                         <div>
-                            <h3 className="font-bold text-gray-900">
-                                {os.serviceLocation === 'EXTERNAL' ? 'Assistência Externa' : 'Serviço em Laboratório'}
+                            <h2 className="text-sm font-black uppercase tracking-widest text-gray-800">Relatório Técnico</h2>
+                            <p className="text-[10px] text-gray-500 font-bold uppercase">Gestão de Diagnóstico e Logística</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Logistics / Type Info Card */}
+                <div className={`p-5 rounded-xl border flex justify-between items-center transition-all ${os.serviceLocation === 'EXTERNAL' ? 'bg-orange-50/50 border-orange-200' : 'bg-blue-50/50 border-blue-200'}`}>
+                    <div className="flex items-center gap-4">
+                        <div className={`p-3 rounded-xl shadow-sm ${os.serviceLocation === 'EXTERNAL' ? 'bg-white text-orange-600' : 'bg-white text-blue-600'}`}>
+                            {os.serviceLocation === 'EXTERNAL' ? <MapPin size={24} strokeWidth={2.5} /> : <Microscope size={24} strokeWidth={2.5} />}
+                        </div>
+                        <div>
+                            <h3 className="font-black text-gray-900 leading-tight uppercase text-xs tracking-tight">
+                                {os.serviceLocation === 'EXTERNAL' ? 'Assistência Técnica Externa' : 'Reparo em Laboratório Especializado'}
                             </h3>
-                            <p className="text-xs text-gray-600 font-medium">
-                                {os.serviceLocation === 'EXTERNAL' ? 'Atendimento realizado no cliente/campo' : 'Equipamento recebido na oficina'}
+                            <p className="text-[11px] text-gray-600 font-medium mt-0.5">
+                                {os.serviceLocation === 'EXTERNAL' ? 'Local: Atendimento realizado diretamente no cliente' : 'Local: Unidade de reparo interna da Nexus OS'}
                             </p>
                         </div>
                     </div>
                 </div>
 
-                {/* Conditional Logistics Fields */}
-                <div className="grid md:grid-cols-2 gap-4">
-                    {os.serviceLocation === 'INTERNAL' && (
-                        <>
-                            <div className="form-group col-span-full">
-                                <label className="label flex items-center gap-2"> <Package size={14} /> Acessórios e Itens Recebidos</label>
-                                <input
-                                    name="accessories"
-                                    value={formData.accessories}
-                                    onChange={handleChange}
-                                    className="input bg-blue-50/20"
-                                    placeholder="Cabos, malas, manuais..."
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label className="label flex items-center gap-2"> <FileText size={14} /> NF de Entrada / Remessa</label>
-                                <input
-                                    name="entryInvoiceNumber"
-                                    value={formData.entryInvoiceNumber}
-                                    onChange={handleChange}
-                                    className="input"
-                                    placeholder="Nº da Nota Fiscal"
-                                />
-                            </div>
-                        </>
-                    )}
-                    {os.serviceLocation === 'EXTERNAL' && (
-                        <div className="form-group col-span-full">
-                            <label className="label flex items-center gap-2"> <MapPin size={14} /> Endereço de Atendimento</label>
-                            <textarea
-                                name="serviceAddress"
-                                value={formData.serviceAddress}
-                                onChange={handleChange}
-                                className="input min-h-[60px] bg-orange-50/20"
-                                placeholder="Endereço onde o serviço será realizado..."
-                            />
+                {/* Main Form Fields */}
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-6">
+                    {/* Logistics specific fields */}
+                    {(os.serviceLocation === 'INTERNAL' || os.serviceLocation === 'EXTERNAL') && (
+                        <div className="grid md:grid-cols-2 gap-6 pb-6 border-b border-gray-50">
+                            {os.serviceLocation === 'INTERNAL' && (
+                                <>
+                                    <div className="form-group col-span-full">
+                                        <label className="label text-[11px] font-black uppercase text-gray-500 tracking-wider">Acessórios e Itens Recebidos</label>
+                                        <input
+                                            name="accessories"
+                                            value={formData.accessories}
+                                            onChange={handleChange}
+                                            className="input bg-gray-50 border-gray-100 focus:bg-white"
+                                            placeholder="Descreva cabos, malas, manuais acompanhando o item..."
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="label text-[11px] font-black uppercase text-gray-500 tracking-wider">NF de Entrada / Remessa</label>
+                                        <input
+                                            name="entryInvoiceNumber"
+                                            value={formData.entryInvoiceNumber}
+                                            onChange={handleChange}
+                                            className="input bg-gray-50 border-gray-100 focus:bg-white"
+                                            placeholder="Número da nota fiscal"
+                                        />
+                                    </div>
+                                </>
+                            )}
+                            {os.serviceLocation === 'EXTERNAL' && (
+                                <div className="form-group col-span-full">
+                                    <label className="label text-[11px] font-black uppercase text-gray-500 tracking-wider">Endereço de Atendimento</label>
+                                    <textarea
+                                        name="serviceAddress"
+                                        value={formData.serviceAddress}
+                                        onChange={handleChange}
+                                        className="input min-h-[60px] bg-gray-50 border-gray-100 focus:bg-white p-3"
+                                        placeholder="Endereço completo para o atendimento externo..."
+                                    />
+                                </div>
+                            )}
                         </div>
                     )}
-                </div>
 
-                <div className="form-group border-t pt-4">
-                    <label className="label">Defeito Relatado (Cliente)</label>
-                    <textarea
-                        name="reportedDefect"
-                        value={formData.reportedDefect}
-                        onChange={handleChange}
-                        className="input min-h-[80px]"
-                    />
-                </div>
+                    <div className="space-y-6">
+                        <div className="form-group">
+                            <label className="label text-[11px] font-black uppercase text-gray-500 tracking-wider">Defeito Relatado (Cliente)</label>
+                            <textarea
+                                name="reportedDefect"
+                                value={formData.reportedDefect}
+                                onChange={handleChange}
+                                className="input min-h-[80px] bg-gray-50 border-gray-100 focus:bg-white text-sm"
+                                placeholder="..."
+                            />
+                        </div>
 
-                <div className="form-group">
-                    <label className="label">Diagnóstico Técnico</label>
-                    <textarea
-                        name="diagnosis"
-                        value={formData.diagnosis}
-                        onChange={handleChange}
-                        className="input min-h-[120px] bg-blue-50/50 border-blue-200"
-                        placeholder="Análise técnica do problema..."
-                    />
-                </div>
+                        <div className="grid md:grid-cols-1 gap-6">
+                            <div className="form-group">
+                                <label className="label text-[11px] font-black uppercase text-blue-600 tracking-wider">Diagnóstico Técnico</label>
+                                <textarea
+                                    name="diagnosis"
+                                    value={formData.diagnosis}
+                                    onChange={handleChange}
+                                    className="input min-h-[120px] bg-blue-50/20 border-blue-100 focus:bg-white text-sm"
+                                    placeholder="Detalhes técnicos da análise realizada..."
+                                />
+                            </div>
 
-                <div className="form-group">
-                    <label className="label">Solução Efetuada</label>
-                    <textarea
-                        name="solution"
-                        value={formData.solution}
-                        onChange={handleChange}
-                        className="input min-h-[120px] bg-green-50/50 border-green-200"
-                        placeholder="O que foi feito para resolver..."
-                    />
-                </div>
-
-                <div className="flex justify-end">
-                    <button onClick={handleSave} className="btn btn-primary" disabled={loading}>
-                        <Save size={18} />
-                        {loading ? 'Salvando...' : 'Salvar Dados'}
-                    </button>
+                            <div className="form-group">
+                                <label className="label text-[11px] font-black uppercase text-green-600 tracking-wider">Solução Efetuada</label>
+                                <textarea
+                                    name="solution"
+                                    value={formData.solution}
+                                    onChange={handleChange}
+                                    className="input min-h-[120px] bg-green-50/20 border-green-100 focus:bg-white text-sm"
+                                    placeholder="Descreva o procedimento realizado para o reparo..."
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             {/* Right Column: Workflow & Info */}
             <div className="space-y-6">
 
-                {/* Workflow Actions */}
-                <div className="card bg-gray-50 border-gray-200 p-4 shadow-sm">
-                    <h3 className="text-sm font-bold uppercase text-muted mb-3">Fluxo de Trabalho</h3>
-                    <div className="flex flex-col gap-2">
-                        {allowed.includes('IN_ANALYSIS') && (
-                            <button onClick={() => handleStatusChange('IN_ANALYSIS')} disabled={statusLoading} className="btn w-full justify-start gap-2 bg-blue-100 text-blue-700 hover:bg-blue-200 border-none shadow-sm font-bold text-xs uppercase">
-                                <AlertTriangle size={16} /> Iniciar Análise
-                            </button>
-                        )}
-                        {allowed.includes('IN_PROGRESS') && (
-                            <button onClick={() => handleStatusChange('IN_PROGRESS')} disabled={statusLoading} className="btn w-full justify-start gap-2 bg-amber-100 text-amber-700 hover:bg-amber-200 border-none shadow-sm font-bold text-xs uppercase">
-                                <Play size={16} /> Iniciar Execução
-                            </button>
-                        )}
-                        {allowed.includes('WAITING_APPROVAL') && (
-                            <button onClick={() => handleStatusChange('WAITING_APPROVAL')} disabled={statusLoading} className="btn w-full justify-start gap-2 bg-purple-100 text-purple-700 hover:bg-purple-200 border-none shadow-sm font-bold text-xs uppercase">
-                                <Clock size={16} /> Aguardar Aprovação
-                            </button>
-                        )}
-                        {allowed.includes('FINISHED') && (
-                            <button onClick={() => handleStatusChange('FINISHED')} disabled={statusLoading} className="btn w-full justify-start gap-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-none shadow-sm font-bold text-xs uppercase">
-                                <CheckCircle size={16} /> Finalizar Serviço
-                            </button>
-                        )}
-                        {allowed.includes('CANCELED') && (
-                            <button onClick={() => handleStatusChange('CANCELED')} disabled={statusLoading} className="btn btn-ghost w-full justify-start gap-1.5 text-red-600 hover:bg-red-50 text-[11px] font-bold uppercase">
-                                <XCircle size={14} /> Cancelar OS
-                            </button>
-                        )}
-                        {allowed.length === 0 && (
-                            <p className="text-sm text-center text-muted italic">Nenhuma ação disponível neste status.</p>
+                {/* Visual Workflow Stepper */}
+                <div className="card bg-gray-50 border-gray-200 p-5 shadow-md ring-1 ring-black/5">
+                    <h3 className="text-xs font-black uppercase text-gray-700 mb-6 flex items-center gap-2 tracking-widest border-b pb-3 border-gray-200">
+                        <Activity size={14} className="text-primary" /> Fluxo de Trabalho
+                    </h3>
+
+                    <div className="space-y-0 relative before:absolute before:inset-0 before:ml-[11px] before:-z-10 before:h-full before:w-0.5 before:bg-gray-200">
+
+                        {/* 1. Entrada */}
+                        <WorkflowStep
+                            title="Entrada do Equipamento"
+                            description="Equipamento recebido e triagem realizada"
+                            isDone={true}
+                            isActive={false}
+                        />
+
+                        {/* 2. Análise */}
+                        <WorkflowStep
+                            title="Análise Técnica"
+                            description={os.status === 'IN_ANALYSIS' ? "Técnico realizando o diagnóstico" : "Diagnóstico concluído"}
+                            isDone={['WAITING_APPROVAL', 'APPROVED', 'REJECTED', 'IN_PROGRESS', 'WAITING_PARTS', 'PAUSED', 'FINISHED', 'INVOICED'].includes(os.status)}
+                            isActive={os.status === 'IN_ANALYSIS'}
+                        >
+                            {allowed.includes('IN_ANALYSIS') && (
+                                <button onClick={() => handleStatusChange('IN_ANALYSIS')} disabled={statusLoading} className="btn btn-xs bg-blue-600 text-white hover:bg-blue-700 border-none shadow-sm font-bold uppercase py-2 h-auto">
+                                    <AlertTriangle size={12} /> Iniciar Análise
+                                </button>
+                            )}
+                            {os.status === 'IN_ANALYSIS' && isTech && (
+                                <button onClick={() => handleStatusChange('WAITING_APPROVAL')} disabled={statusLoading} className="btn btn-xs bg-purple-600 text-white hover:bg-purple-700 border-none shadow-sm font-bold uppercase py-2 h-auto mt-2">
+                                    <Clock size={12} /> Finalizar e Enviar Orçamento
+                                </button>
+                            )}
+                        </WorkflowStep>
+
+                        {/* 3. Orçamento */}
+                        <WorkflowStep
+                            title="Proposta Comercial"
+                            description={os.status === 'WAITING_APPROVAL' ? "Aguardando aprovação do cliente" : "Orçamento processado"}
+                            isDone={['APPROVED', 'REJECTED', 'IN_PROGRESS', 'WAITING_PARTS', 'PAUSED', 'FINISHED', 'INVOICED'].includes(os.status)}
+                            isActive={os.status === 'WAITING_APPROVAL'}
+                        >
+                            {os.status === 'WAITING_APPROVAL' && isCommercial && (
+                                <div className="space-y-3 mt-2 p-3 bg-white rounded-lg border border-purple-100 shadow-sm">
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[10px] font-black uppercase text-purple-600">Prazo Estimado</label>
+                                        <input
+                                            type="date"
+                                            value={executionDeadline}
+                                            onChange={(e) => setExecutionDeadline(e.target.value)}
+                                            className="input input-xs border-purple-100 focus:border-purple-400"
+                                        />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => handleStatusChange('APPROVED')} disabled={statusLoading} className="btn btn-xs flex-1 bg-green-600 text-white hover:bg-green-700 border-none shadow-sm font-bold uppercase py-2 h-auto">
+                                            Aprovar
+                                        </button>
+                                        <button onClick={() => handleStatusChange('REJECTED')} disabled={statusLoading} className="btn btn-xs flex-1 bg-red-100 text-red-700 hover:bg-red-200 border-none shadow-sm font-bold uppercase py-2 h-auto">
+                                            Reprovar
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </WorkflowStep>
+
+                        {/* 4. Execução / Devolução */}
+                        <WorkflowStep
+                            title={os.status === 'REJECTED' ? "Devolução sem Reparo" : "Execução do Serviço"}
+                            description={
+                                os.status === 'REJECTED' ? "Equipamento deve ser liberado para o cliente" :
+                                    ['APPROVED', 'IN_PROGRESS', 'WAITING_PARTS', 'PAUSED'].includes(os.status) ? "Trabalho em andamento" :
+                                        "Serviço ou Devolução processada"
+                            }
+                            isDone={['FINISHED', 'INVOICED'].includes(os.status)}
+                            isActive={['APPROVED', 'REJECTED', 'IN_PROGRESS', 'WAITING_PARTS', 'PAUSED'].includes(os.status)}
+                            color={os.status === 'REJECTED' ? 'bg-red-500' : 'bg-amber-500'}
+                        >
+                            <div className="flex flex-col gap-2 mt-2">
+                                {os.status === 'REJECTED' && (isTech || isAdmin) && (
+                                    <button onClick={() => handleStatusChange('FINISHED')} disabled={statusLoading} className="btn btn-xs bg-red-600 text-white hover:bg-red-700 border-none shadow-sm font-bold uppercase py-2 h-auto text-[10px]">
+                                        <XCircle size={12} /> Liberar Equipamento (Devolução)
+                                    </button>
+                                )}
+                                {allowed.includes('IN_PROGRESS') && (
+                                    <button onClick={() => handleStatusChange('IN_PROGRESS')} disabled={statusLoading} className="btn btn-xs bg-amber-600 text-white hover:bg-amber-700 border-none shadow-sm font-bold uppercase py-2 h-auto">
+                                        <Play size={12} /> Iniciar Reparo
+                                    </button>
+                                )}
+                                {os.status === 'IN_PROGRESS' && (
+                                    <button onClick={() => handleStatusChange('FINISHED')} disabled={statusLoading} className="btn btn-xs bg-emerald-600 text-white hover:bg-emerald-700 border-none shadow-sm font-bold uppercase py-2 h-auto">
+                                        <CheckCircle size={12} /> Finalizar Reparo
+                                    </button>
+                                )}
+                            </div>
+                        </WorkflowStep>
+
+                        {/* 5. Conclusão */}
+                        <WorkflowStep
+                            title="Conclusão"
+                            description={os.status === 'FINISHED' ? "Aguardando faturamento/entrega" : "Processo finalizado"}
+                            isDone={os.status === 'INVOICED'}
+                            isActive={os.status === 'FINISHED'}
+                        >
+                            {os.status === 'FINISHED' && isCommercial && (
+                                <button onClick={() => handleStatusChange('INVOICED')} disabled={statusLoading} className="btn btn-xs bg-blue-600 text-white hover:bg-blue-700 border-none shadow-sm font-bold uppercase py-2 h-auto mt-2">
+                                    <FileText size={12} /> Marcar como Faturado
+                                </button>
+                            )}
+                        </WorkflowStep>
+
+                        {/* 6. Faturamento */}
+                        <WorkflowStep
+                            title="Entrega / Faturamento"
+                            description="Fluxo finalizado com sucesso"
+                            isDone={os.status === 'INVOICED'}
+                            isActive={os.status === 'INVOICED'}
+                            isLast={true}
+                        />
+
+                        {/* Admin Action: Cancel */}
+                        {allowed.includes('CANCELED') && isAdmin && (
+                            <div className="mt-8 pt-4 border-t border-gray-200">
+                                <button
+                                    onClick={() => handleStatusChange('CANCELED')}
+                                    disabled={statusLoading}
+                                    className="btn btn-ghost w-full justify-center gap-1.5 text-red-600 hover:bg-red-50 hover:text-red-700 text-[10px] font-black uppercase tracking-tight border border-dashed border-red-200"
+                                >
+                                    <XCircle size={14} /> Cancelar OS (Admin)
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>
 
                 {/* Additional Info */}
-                <div className="form-group">
-                    <label className="label">Observações Internas (Equipe)</label>
-                    <textarea
-                        name="internalNotes"
-                        value={formData.internalNotes}
-                        onChange={handleChange}
-                        className="input min-h-[100px] text-sm text-muted-foreground bg-amber-50/10 border-amber-100"
-                        placeholder="Anotações visíveis apenas para a equipe..."
-                    />
-                </div>
-
-                <div className="card p-3 bg-white border-gray-100 space-y-2 text-xs">
-                    <div className="flex justify-between items-center text-muted">
-                        <span className="font-bold">Abertura:</span>
-                        <span>{os.createdAt ? new Date(os.createdAt).toLocaleDateString('pt-BR') : '-'}</span>
+                <div className="space-y-4">
+                    <div className="form-group pb-2">
+                        <label className="label text-[11px] font-black uppercase text-gray-500 tracking-wider">Observações Internas (Equipe)</label>
+                        <textarea
+                            name="internalNotes"
+                            value={formData.internalNotes}
+                            onChange={handleChange}
+                            className="input min-h-[100px] text-sm text-gray-700 bg-amber-50/10 border-amber-100 focus:border-amber-300 transition-colors"
+                            placeholder="Anotações visíveis apenas para a equipe..."
+                        />
                     </div>
-                    {os.startedAt && (
-                        <div className="flex justify-between items-center text-muted">
-                            <span className="font-bold">Início:</span>
-                            <span>{new Date(os.startedAt).toLocaleDateString('pt-BR')}</span>
+
+                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                        <div className="bg-gray-50/80 border-b border-gray-100 px-4 py-2 flex justify-between items-center">
+                            <span className="text-[10px] font-black uppercase text-gray-500 tracking-widest">Cronologia da OS</span>
+                            <Clock size={12} className="text-gray-400" />
                         </div>
-                    )}
-                    {os.finishedAt && (
-                        <div className="flex justify-between items-center text-green-700 font-bold">
-                            <span>Conclusão:</span>
-                            <span>{new Date(os.finishedAt).toLocaleDateString('pt-BR')}</span>
+                        <div className="p-4 space-y-3">
+                            <div className="flex justify-between items-center">
+                                <span className="text-[11px] font-bold text-gray-400 uppercase">Abertura:</span>
+                                <span className="text-sm font-black text-gray-700">{os.createdAt ? new Date(os.createdAt).toLocaleDateString('pt-BR') : '-'}</span>
+                            </div>
+
+                            {os.startedAt && (
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[11px] font-bold text-gray-400 uppercase">Início Técnico:</span>
+                                    <span className="text-sm font-black text-gray-700">{new Date(os.startedAt).toLocaleDateString('pt-BR')}</span>
+                                </div>
+                            )}
+
+                            {os.finishedAt && (
+                                <div className="flex justify-between items-center py-2 px-3 bg-green-50 rounded-lg border border-green-100">
+                                    <span className="text-[11px] font-black text-green-700 uppercase">Conclusão:</span>
+                                    <span className="text-sm font-black text-green-700">{new Date(os.finishedAt).toLocaleDateString('pt-BR')}</span>
+                                </div>
+                            )}
+
+                            {os.executionDeadline && (
+                                <div className="flex justify-between items-center py-2 px-3 bg-blue-600 rounded-lg text-white shadow-md shadow-blue-200">
+                                    <span className="text-[11px] font-black uppercase flex items-center gap-1"><Clock size={12} /> Prazo OS:</span>
+                                    <span className="text-sm font-black">{new Date(os.executionDeadline).toLocaleDateString('pt-BR')}</span>
+                                </div>
+                            )}
                         </div>
-                    )}
+                    </div>
                 </div>
 
+            </div>
+        </div>
+    );
+}
+
+function WorkflowStep({ title, description, isDone, isActive, isLast = false, color = 'bg-primary', children }) {
+    return (
+        <div className={cn("relative pl-8 pb-6", isLast && "pb-0")}>
+            {/* Status Dot */}
+            <div className={cn(
+                "absolute left-0 top-0.5 w-6 h-6 rounded-full border-2 border-white shadow-sm flex items-center justify-center transition-all duration-500 z-10",
+                isDone ? "bg-emerald-500 text-white" :
+                    isActive ? cn(color, "ring-2 ring-offset-1 ring-opacity-20 animate-pulse scale-105") :
+                        "bg-gray-200 text-gray-400"
+            )}>
+                {isDone ? (
+                    <Check size={14} strokeWidth={4} />
+                ) : (
+                    <div className={cn("w-1 h-1 rounded-full bg-current", !isActive && "opacity-20")} />
+                )}
+            </div>
+
+            <div className="flex flex-col">
+                <h4 className={cn(
+                    "text-xs font-black uppercase tracking-tight transition-colors",
+                    isDone ? "text-emerald-700" : isActive ? "text-gray-900" : "text-gray-400"
+                )}>
+                    {title}
+                </h4>
+                <p className={cn(
+                    "text-[10px] leading-tight mt-0.5",
+                    isActive ? "text-gray-600 font-medium" : "text-gray-400"
+                )}>
+                    {description}
+                </p>
+                {children && <div className="mt-3">{children}</div>}
             </div>
         </div>
     );

@@ -2,7 +2,6 @@
 
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { SERVICE_ORDER_STATUS } from '@/utils/status-machine';
 import { validate, serviceOrderSchema, sanitizeObject } from '@/lib/validation';
 import { logger, createErrorResponse, createSuccessResponse } from '@/lib/logger';
 
@@ -20,7 +19,7 @@ async function generateServiceOrderCode(maintenanceArea = 'GENERAL') {
     };
     const prefix = prefixes[maintenanceArea] || 'OS';
     const year = new Date().getFullYear();
-    const searchPrefix = `${prefix}-${year}-`;
+    const searchPrefix = `${prefix} -${year} -`;
 
     // 2. Get last code for this Prefix + Year
     const lastOS = await prisma.serviceOrder.findFirst({
@@ -46,7 +45,7 @@ async function generateServiceOrderCode(maintenanceArea = 'GENERAL') {
 
     // Pad with 4 zeros (limit 9999 as requested)
     const sequence = String(nextNumber).padStart(4, '0');
-    return `${prefix}-${year}-${sequence}`;
+    return `${prefix} -${year} -${sequence} `;
 }
 
 import { auth } from '@/auth';
@@ -122,9 +121,10 @@ export async function getServiceOrders({
         prisma.serviceOrder.findMany({
             where,
             include: {
-                client: { select: { name: true } },
+                client: { select: { name: true, city: true, state: true } },
                 equipment: { select: { partNumber: true, name: true, brand: true, model: true, serialNumber: true } },
                 technician: { select: { name: true } },
+                statusHistory: { orderBy: { createdAt: 'desc' }, include: { changedBy: { select: { name: true } } } },
             },
             skip,
             take: ITEMS_PER_PAGE,
@@ -149,6 +149,7 @@ export async function getServiceOrder(id) {
             technician: true,
             services: { include: { service: true } },
             parts: { include: { part: true } },
+            statusHistory: { orderBy: { createdAt: 'desc' }, include: { changedBy: { select: { name: true } } } },
         }
     });
 }
@@ -256,7 +257,7 @@ export async function createServiceOrder(formData) {
         return createSuccessResponse({ id: newOs.id });
     } catch (e) {
         logger.error('Erro ao criar OS:', e);
-        return createErrorResponse(`Erro ao criar ordem de serviço: ${e.message}`, e, { action: 'createServiceOrder' });
+        return createErrorResponse(`Erro ao criar ordem de serviço: ${e.message} `, e, { action: 'createServiceOrder' });
     }
 }
 
@@ -313,10 +314,34 @@ export async function updateServiceOrderHeader(id, formData) {
             await recalculateServiceOrderTotal(parseInt(id));
         }
 
-        revalidatePath(`/service-orders/${id}`);
+        revalidatePath(`/ service - orders / ${id} `);
         logger.info('Cabeçalho de OS atualizado', { osId: id });
         return createSuccessResponse();
     } catch (e) {
         return createErrorResponse('Erro ao atualizar ordem de serviço', e, { action: 'updateServiceOrderHeader', osId: id });
+    }
+}
+
+export async function updateCommercialDetails(id, data) {
+    const session = await auth();
+    if (!session || !['ADMIN', 'BACKOFFICE', 'COMERCIAL'].includes(session.user.role)) {
+        return { error: "Unauthorized" };
+    }
+
+    try {
+        await prisma.serviceOrder.update({
+            where: { id: parseInt(id) },
+            data: {
+                entryInvoiceNumber: data.entryInvoiceNumber,
+                exitInvoiceNumber: data.exitInvoiceNumber,
+            }
+        });
+
+        revalidatePath('/commercial');
+        revalidatePath('/service-orders');
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating commercial details:", error);
+        return { error: "Failed to update details" };
     }
 }

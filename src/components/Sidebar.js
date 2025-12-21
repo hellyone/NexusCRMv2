@@ -2,13 +2,15 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, Wrench, Settings, ClipboardList, Package, Zap, Menu, X, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, Users, Wrench, Settings, ClipboardList, Package, Zap, Menu, X, LogOut, ChevronLeft, ChevronRight, DollarSign, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SignOutButton from './SignOutButton';
 import Notifications from './Notifications';
 
 const allNavItems = [
-    { name: 'Dashboard', href: '/finance', icon: Home, roles: ['ADMIN', 'BACKOFFICE'] },
+    { name: 'Dashboard', href: '/', icon: Home, roles: ['ADMIN', 'BACKOFFICE', 'TECH_INTERNAL', 'TECH_FIELD'] },
+    { name: 'Comercial', href: '/commercial', icon: DollarSign, roles: ['ADMIN', 'BACKOFFICE'] },
+    { name: 'Financeiro', href: '/finance', icon: TrendingUp, roles: ['ADMIN', 'BACKOFFICE'] },
     { name: 'Ordens de Serviço', href: '/service-orders', icon: ClipboardList, roles: ['ADMIN', 'BACKOFFICE', 'TECH_INTERNAL', 'TECH_FIELD'] },
     { name: 'Clientes', href: '/clients', icon: Users, roles: ['ADMIN', 'BACKOFFICE', 'TECH_INTERNAL'] },
     { name: 'Equipamentos', href: '/equipments', icon: Wrench, roles: ['ADMIN', 'BACKOFFICE', 'TECH_INTERNAL'] },
@@ -86,9 +88,7 @@ export default function Sidebar({ user }) {
                         {visibleItems.map((item) => {
                             const Icon = item.icon;
                             // Check exact match for root or startsWith for sub-pages
-                            const isActive = item.href === '/finance'
-                                ? pathname === '/finance'
-                                : pathname.startsWith(item.href);
+                            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
 
                             return (
                                 <Link

@@ -133,9 +133,19 @@ const ServiceOrderPdf = ({ os }) => {
                 {/* OS Info & Client */}
                 <View style={styles.section}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                        <Text style={styles.title}>Ordem de Serviço #{os.code}</Text>
+                        <Text style={styles.title}>
+                            {os.status === 'WAITING_APPROVAL' ? 'Orçamento de Serviço' : 'Laudo Técnico'} #{os.code}
+                        </Text>
                         <Text style={styles.statusBadge}>{os.status}</Text>
                     </View>
+
+                    {os.status === 'WAITING_APPROVAL' && (
+                        <View style={{ marginBottom: 10, padding: 5, backgroundColor: '#EFF6FF', borderRadius: 4 }}>
+                            <Text style={{ fontSize: 9, color: '#1E40AF', fontStyle: 'italic' }}>
+                                Este orçamento é válido por 10 (dez) dias corridos a contar da data de emissão ({DateFmt(new Date().toISOString())}).
+                            </Text>
+                        </View>
+                    )}
 
                     <View style={{ flexDirection: 'row', gap: 20 }}>
                         <View style={{ flex: 1 }}>

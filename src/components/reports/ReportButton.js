@@ -29,7 +29,7 @@ export default function ReportButton({ os }) {
                 ) : (
                     <>
                         <FileDown size={18} />
-                        Baixar Laudo
+                        {os.status === 'WAITING_APPROVAL' ? 'Baixar Orçamento' : 'Baixar Laudo'}
                     </>
                 )
             }

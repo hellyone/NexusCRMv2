@@ -12,11 +12,11 @@ export default function OsFinancialTab({ os }) {
     const [laborHours, setLaborHours] = useState(os.laborHours?.toString() || '0');
     const [displacement, setDisplacement] = useState(os.displacement?.toString() || '0');
     const [discount, setDiscount] = useState(os.discount?.toString() || '0');
-    
+
     // Calculate labor cost based on technician's cost per hour
     const technicianCostPerHour = os.technician?.costPerHour || 0;
     const calculatedLaborCost = parseFloat(laborHours) * technicianCostPerHour;
-    
+
     // Totals are calculated on backend and passed via OS object.
     const grandTotal = os.total;
     const subtotal = os.totalServices + os.totalParts + (os.laborCost || 0) + (os.displacement || 0);
@@ -28,7 +28,7 @@ export default function OsFinancialTab({ os }) {
         formData.append('laborCost', calculatedLaborCost.toString());
         formData.append('displacement', displacement);
         formData.append('discount', discount);
-        
+
         const result = await updateServiceOrderHeader(os.id, formData);
         if (result.error) {
             alert(result.error);
@@ -124,15 +124,20 @@ export default function OsFinancialTab({ os }) {
             </div>
 
             {/* Total Summary */}
-            <div className="card bg-gray-50 border p-6 flex flex-col justify-center gap-6">
+            <div className={`card border p-6 flex flex-col justify-center gap-6 ${os.status === 'WAITING_APPROVAL' ? 'bg-blue-600 text-white border-blue-700 shadow-lg' : 'bg-gray-50 border-gray-200'}`}>
                 <div className="space-y-1 text-center">
-                    <p className="text-sm text-muted uppercase font-bold tracking-wide">Valor Total da OS</p>
-                    <p className="text-4xl font-extrabold text-blue-600">
+                    <p className={`text-sm uppercase font-bold tracking-wide ${os.status === 'WAITING_APPROVAL' ? 'text-blue-100' : 'text-muted'}`}>
+                        {os.status === 'WAITING_APPROVAL' ? 'Valor Total do Orçamento' : 'Valor Total da OS'}
+                    </p>
+                    <p className={`text-4xl font-extrabold ${os.status === 'WAITING_APPROVAL' ? 'text-white' : 'text-blue-600'}`}>
                         R$ {maskCurrency(grandTotal.toFixed(2))}
                     </p>
+                    {os.status === 'WAITING_APPROVAL' && (
+                        <p className="text-xs text-blue-100 mt-2 italic">Validade: 10 dias após a emissão</p>
+                    )}
                 </div>
 
-                <hr className="border-gray-200" />
+                <hr className={os.status === 'WAITING_APPROVAL' ? 'border-blue-500/30' : 'border-gray-200'} />
 
                 <div className="space-y-2">
                     <div className="flex justify-between text-sm text-gray-600">

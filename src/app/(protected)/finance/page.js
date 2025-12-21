@@ -18,11 +18,11 @@ export default async function FinancePage({ searchParams }) {
         <div className="flex flex-col gap-8">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold">Dashboard Financeiro</h1>
-                    <p className="text-muted text-sm">Visão geral do faturamento e métricas</p>
+                    <h1 className="text-2xl font-bold">Gestão Financeira</h1>
+                    <p className="text-muted text-sm">Métricas de faturamento, ticket médio e evolução</p>
                 </div>
 
-                {/* Period Selector (Simple Link based) */}
+                {/* Period Selector */}
                 <div className="join border rounded-md bg-white">
                     <a href="?period=today" className={`btn btn-sm join-item ${currentPeriod === 'today' ? 'btn-active btn-primary' : 'btn-ghost'}`}>Hoje</a>
                     <a href="?period=month" className={`btn btn-sm join-item ${currentPeriod === 'month' ? 'btn-active btn-primary' : 'btn-ghost'}`}>Mês</a>
@@ -55,7 +55,7 @@ export default async function FinancePage({ searchParams }) {
                 />
                 <FinancialCard
                     title="Serviços vs Peças"
-                    value={`${((metrics.revenueBreakdown.services / metrics.totalRevenue || 0) * 100).toFixed(0)}% / ${((metrics.revenueBreakdown.parts / metrics.totalRevenue || 0) * 100).toFixed(0)}%`}
+                    value={`${((metrics.revenueBreakdown.services / (metrics.totalRevenue || 1)) * 100).toFixed(0)}% / ${((metrics.revenueBreakdown.parts / (metrics.totalRevenue || 1)) * 100).toFixed(0)}%`}
                     icon={Activity}
                     subtext={`S: ${fmt(metrics.revenueBreakdown.services)} | P: ${fmt(metrics.revenueBreakdown.parts)}`}
                     color="amber"
@@ -63,7 +63,6 @@ export default async function FinancePage({ searchParams }) {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
                 {/* Main Chart */}
                 <div className="lg:col-span-2 card bg-white border p-6">
                     <h3 className="text-lg font-bold mb-6">Evolução do Faturamento (Ano Atual)</h3>

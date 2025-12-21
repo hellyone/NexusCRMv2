@@ -9,14 +9,16 @@ import OsPartsTab from './tabs/OsPartsTab';
 import OsFinancialTab from './tabs/OsFinancialTab';
 import OsStatusHistory from './tabs/OsStatusHistory';
 
-export default function ServiceOrderTabs({ os }) {
+export default function ServiceOrderTabs({ os, user }) {
     const [activeTab, setActiveTab] = useState('general');
+    const role = user?.role || 'GUEST';
+    const isCommercial = ['ADMIN', 'BACKOFFICE'].includes(role);
 
     const tabs = [
         { id: 'general', label: 'Visão Geral', icon: FileText },
         { id: 'services', label: 'Serviços', icon: Wrench },
         { id: 'parts', label: 'Peças', icon: Package },
-        { id: 'financial', label: 'Financeiro', icon: DollarSign },
+        ...(isCommercial ? [{ id: 'financial', label: 'Financeiro', icon: DollarSign }] : []),
         { id: 'history', label: 'Histórico', icon: Clock },
     ];
 
@@ -42,11 +44,11 @@ export default function ServiceOrderTabs({ os }) {
             </div>
 
             <div className="p-6 flex-1">
-                {activeTab === 'general' && <OsGeneralTab os={os} />}
-                {activeTab === 'services' && <OsServicesTab os={os} />}
-                {activeTab === 'parts' && <OsPartsTab os={os} />}
-                {activeTab === 'financial' && <OsFinancialTab os={os} />}
-                {activeTab === 'history' && <OsStatusHistory serviceOrderId={os.id} />}
+                {activeTab === 'general' && <OsGeneralTab os={os} user={user} />}
+                {activeTab === 'services' && <OsServicesTab os={os} user={user} />}
+                {activeTab === 'parts' && <OsPartsTab os={os} user={user} />}
+                {activeTab === 'financial' && <OsFinancialTab os={os} user={user} />}
+                {activeTab === 'history' && <OsStatusHistory serviceOrderId={os.id} user={user} />}
             </div>
         </div>
     );

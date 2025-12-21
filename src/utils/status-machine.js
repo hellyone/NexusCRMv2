@@ -14,10 +14,10 @@ export const SERVICE_ORDER_STATUS = {
 
 export const ALLOWED_TRANSITIONS = {
     OPEN: ["IN_ANALYSIS", "CANCELED"],
-    IN_ANALYSIS: ["WAITING_APPROVAL", "IN_PROGRESS", "CANCELED"],
+    IN_ANALYSIS: ["WAITING_APPROVAL", "CANCELED"],
     WAITING_APPROVAL: ["APPROVED", "REJECTED", "CANCELED"],
     APPROVED: ["IN_PROGRESS", "CANCELED"],
-    REJECTED: ["CANCELED", "OPEN"], // Pode reabrir para nova análise
+    REJECTED: ["FINISHED", "CANCELED", "OPEN"], // Devolve sem reparo ou tenta reabrir
     IN_PROGRESS: ["WAITING_PARTS", "PAUSED", "FINISHED", "CANCELED"],
     WAITING_PARTS: ["IN_PROGRESS", "CANCELED"],
     PAUSED: ["IN_PROGRESS", "CANCELED"],
@@ -26,10 +26,45 @@ export const ALLOWED_TRANSITIONS = {
     CANCELED: []
 };
 
-export function canTransition(currentStatus, newStatus) {
+// Define quais papéis podem realizar quais transições
+export const WORKFLOW_ROLES = {
+    // ADMIN pode tudo (será tratado via override)
+
+    // BACKOFFICE / COMERCIAL
+    BACKOFFICE: {
+        TRANSITIONS: ["APPROVED", "REJECTED", "INVOICED", "CANCELED", "OPEN"],
+        DENY_FROM: ["IN_ANALYSIS", "IN_PROGRESS"] // Não pode tirar dessas fases
+    },
+
+    // TÉCNICO
+    TECH: {
+        TRANSITIONS: ["IN_ANALYSIS", "WAITING_APPROVAL", "IN_PROGRESS", "WAITING_PARTS", "PAUSED", "FINISHED"],
+        DENY_TO: ["APPROVED", "INVOICED"], // Jamais aprova orçamento ou fatura. PODE REJEITADO -> FINISHED (Devolução)
+    }
+};
+
+export function canTransition(currentStatus, newStatus, userRole = "ADMIN") {
     if (!currentStatus) return true; // Creation
-    // Admin override could bypass this, but for now strict:
-    return ALLOWED_TRANSITIONS[currentStatus]?.includes(newStatus);
+    if (userRole === "ADMIN") return ALLOWED_TRANSITIONS[currentStatus]?.includes(newStatus);
+
+    const isTech = userRole.startsWith("TECH");
+    const roleConfig = isTech ? WORKFLOW_ROLES.TECH : WORKFLOW_ROLES.BACKOFFICE;
+
+    // 1. Verifica se a transição básica é permitida pela máquina de estados
+    const basicAllowed = ALLOWED_TRANSITIONS[currentStatus]?.includes(newStatus);
+    if (!basicAllowed) return false;
+
+    // 2. Regras do Técnico
+    if (isTech) {
+        if (roleConfig.DENY_TO.includes(newStatus)) return false;
+    }
+
+    // 3. Regras do Comercial (Backoffice)
+    if (userRole === "BACKOFFICE") {
+        if (roleConfig.DENY_FROM.includes(currentStatus)) return false;
+    }
+
+    return true;
 }
 
 export const PRIORITY_OPTIONS = {

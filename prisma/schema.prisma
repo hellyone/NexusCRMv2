@@ -297,6 +297,7 @@ model ServiceOrder {
   
   // Dados Fiscais (Entrada)
   entryInvoiceNumber String? // NF de Entrada / Remessa
+  exitInvoiceNumber  String? // Nota Fiscal de Saída (Nova)
   accessories        String? // Itens que acompanham o equipamento
   
   // Status e Datas
@@ -307,6 +308,7 @@ model ServiceOrder {
   scheduledAt     DateTime?
   startedAt       DateTime?
   finishedAt      DateTime?
+  executionDeadline DateTime?
   warrantyUntil   DateTime?
   
   // Laudo Técnico
