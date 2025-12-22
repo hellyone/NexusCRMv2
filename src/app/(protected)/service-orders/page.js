@@ -1,6 +1,6 @@
 
 import Link from 'next/link';
-import { Plus, Search, User, Calendar, AlertCircle, Microscope, MapPin, LayoutGrid, Settings } from 'lucide-react';
+import { Plus, Search, User, Calendar, AlertCircle, Microscope, MapPin, LayoutGrid, Settings, Activity } from 'lucide-react';
 import { getServiceOrders } from '@/actions/service-orders';
 import { SERVICE_ORDER_STATUS, PRIORITY_OPTIONS, getPublicStatus } from '@/utils/status-machine';
 import { auth } from '@/auth';
@@ -26,49 +26,43 @@ export default async function ServiceOrdersPage({ searchParams }) {
     const session = await auth();
     const currentUser = session?.user;
 
-    const { serviceOrders, totalPages } = await getServiceOrders({
-        query,
-        page: Number(page),
-        status: status || null,
-        clientId: clientId || null,
-        technicianId: technicianId || null,
-        priority: priority || null,
-        type: type || null,
-        maintenanceArea: maintenanceArea || null,
-        dateFrom: dateFrom || null,
-        dateTo: dateTo || null,
-        serviceLocation: location || null,
-    });
+    // Define status groups
+    const ARCHIVED_STATUSES = ['DISPATCHED', 'SCRAPPED', 'ABANDONED', 'WARRANTY_RETURN', 'CANCELED'];
+    const ACTIVE_STATUSES = Object.keys(SERVICE_ORDER_STATUS).filter(s => !ARCHIVED_STATUSES.includes(s));
 
-    // Helper to render status badge
-    // Helper to render status badge
-    const StatusBadge = ({ os, role }) => {
-        const { label, color } = getPublicStatus(os, role);
-        return (
-            <span className={`text-[10px] px-2 py-0.5 rounded border whitespace-nowrap font-bold uppercase tracking-tight block w-fit ${color}`}>
-                {label}
-            </span>
-        );
-    };
+    // Conditional Fetching
+    let activeOrdersData = { serviceOrders: [], totalPages: 0 };
+    let archivedOrdersData = { serviceOrders: [], totalPages: 0 };
+    let isSplitView = !status;
 
-    const getPriorityColor = (p) => {
-        switch (p) {
-            case 'URGENT': return 'text-red-700 font-bold bg-red-50 border-red-100';
-            case 'HIGH': return 'text-orange-700 font-old bg-orange-50 border-orange-100';
-            default: return 'text-gray-600 bg-gray-50 border-gray-100';
-        }
-    };
-
-    const formatPriority = (p) => {
-        if (!p) return '-';
-        if (p === 'URGENT') return 'Urgente';
-        if (p === 'HIGH') return 'Alta';
-        if (p === 'NORMAL') return 'Normal';
-        if (p === 'LOW') return 'Baixa';
-        // Capitalize first letter logic fallback
-        return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
-    };
-
+    if (isSplitView) {
+        // Fetch separate lists
+        [activeOrdersData, archivedOrdersData] = await Promise.all([
+            getServiceOrders({
+                query, page: Number(page), status: ACTIVE_STATUSES,
+                clientId: clientId || null, technicianId: technicianId || null,
+                priority: priority || null, type: type || null,
+                maintenanceArea: maintenanceArea || null, dateFrom: dateFrom || null,
+                dateTo: dateTo || null, serviceLocation: location || null,
+            }),
+            getServiceOrders({
+                query, page: Number(page), status: ARCHIVED_STATUSES,
+                clientId: clientId || null, technicianId: technicianId || null,
+                priority: priority || null, type: type || null,
+                maintenanceArea: maintenanceArea || null, dateFrom: dateFrom || null,
+                dateTo: dateTo || null, serviceLocation: location || null,
+            })
+        ]);
+    } else {
+        // Fetch single list based on filter
+        activeOrdersData = await getServiceOrders({
+            query, page: Number(page), status: status,
+            clientId: clientId || null, technicianId: technicianId || null,
+            priority: priority || null, type: type || null,
+            maintenanceArea: maintenanceArea || null, dateFrom: dateFrom || null,
+            dateTo: dateTo || null, serviceLocation: location || null,
+        });
+    }
 
     const tabClass = (active) => `flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-all border-b-2 -mb-[2px] ${active ? 'border-primary text-primary bg-blue-50/50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`;
 
@@ -149,157 +143,196 @@ export default async function ServiceOrdersPage({ searchParams }) {
                     </div>
                 </form>
 
-                <div className="w-full overflow-auto">
-                    <table className="w-full caption-bottom text-sm border-collapse">
-                        <thead>
-                            <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider w-[100px]">OS</th>
-                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider min-w-[140px]">Status Técnico</th>
-                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider min-w-[140px]">Status Comercial</th>
-                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider w-[90px]">Prio</th>
-                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider min-w-[150px]">Cliente</th>
-                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider min-w-[150px]">Equipamento</th>
-                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider hidden xl:table-cell">Série</th>
-                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider hidden lg:table-cell">Local</th>
-                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider whitespace-nowrap hidden 2xl:table-cell">Técnico</th>
-                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider hidden lg:table-cell">Data</th>
-                                <th className="h-12 px-4 text-right align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody className="[&_tr:last-child]:border-0 font-medium">
-                            {serviceOrders.map((os) => (
-                                <tr key={os.id} className="border-b hover:bg-slate-50 transition-colors">
-                                    <td className="p-4 align-middle">
-                                        <span className="font-mono font-bold text-gray-900 whitespace-nowrap">{os.code}</span>
-                                    </td>
-                                    <td className="p-4 align-middle">
-                                        <StatusBadge os={os} role="TECH" />
-                                    </td>
-                                    <td className="p-4 align-middle">
-                                        <StatusBadge os={os} role="BACKOFFICE" />
-                                    </td>
-                                    <td className="p-4 align-middle">
-                                        <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded border ${getPriorityColor(os.priority)} `}>
-                                            <AlertCircle size={10} />
-                                            {formatPriority(os.priority)}
-                                        </span>
-                                    </td>
-                                    <td className="p-4 align-middle">
-                                        <span className="text-gray-900 line-clamp-1 max-w-[150px]" title={os.client.name}>
-                                            {os.client.name}
-                                        </span>
-                                    </td>
-                                    <td className="p-4 align-middle">
-                                        {os.equipment ? (
-                                            <div className="flex flex-col">
-                                                <span className="text-gray-900 leading-none font-bold font-mono text-[11px] uppercase">{os.equipment.partNumber || '-'}</span>
-                                                <span className="text-[10px] text-muted-foreground mt-1 truncate max-w-[120px] font-medium uppercase italic">{os.equipment.name}</span>
-                                            </div>
-                                        ) : (
-                                            <span className="text-muted-foreground italic">-</span>
-                                        )}
-                                    </td>
-                                    <td className="p-4 align-middle hidden xl:table-cell font-mono text-[11px] text-gray-600">
-                                        {os.equipment?.serialNumber || '-'}
-                                    </td>
-                                    <td className="p-4 align-middle hidden lg:table-cell">
-                                        <div className="flex items-center gap-1.5">
-                                            {os.serviceLocation === 'EXTERNAL' ? (
-                                                <div className="flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-100 text-[10px] font-bold uppercase">
-                                                    <MapPin size={12} /> Campo
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-1 text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 text-[10px] font-bold uppercase">
-                                                    <Microscope size={12} /> Lab
-                                                </div>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="p-4 align-middle hidden 2xl:table-cell">
-                                        {os.technician ? (
-                                            <div className="flex items-center gap-1 text-xs text-gray-700">
-                                                <User size={12} className="text-muted-foreground" />
-                                                <span className="whitespace-nowrap">{os.technician.name.split(' ')[0]}</span>
-                                            </div>
-                                        ) : (
-                                            <span className="text-[10px] text-muted-foreground italic">Pendente</span>
-                                        )}
-                                    </td>
-                                    <td className="p-4 align-middle hidden lg:table-cell">
-                                        <div className="flex items-center gap-1 text-muted-foreground text-[11px]">
-                                            <Calendar size={12} />
-                                            {new Date(os.createdAt).toLocaleDateString('pt-BR')}
-                                        </div>
-                                    </td>
-                                    <td className="p-4 align-middle text-right">
-                                        <Link href={`/service-orders/${os.id}`} className="btn btn-ghost hover:bg-slate-100 btn-sm btn-circle text-primary">
-                                            <Settings size={18} />
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))}
-                            {serviceOrders.length === 0 && (
-                                <tr>
-                                    <td colSpan="11" className="text-center p-12 text-muted-foreground">
-                                        <div className="flex flex-col items-center gap-2">
-                                            <LayoutGrid size={32} className="opacity-20" />
-                                            <p>Nenhuma Ordem de Serviço encontrada.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                <div className="space-y-8">
+                    {/* Active Orders Section */}
+                    <div className="space-y-4">
+                        {isSplitView && <h3 className="font-bold text-gray-700 flex items-center gap-2"><Activity size={18} className="text-blue-600" /> Ordens Ativas (Em Andamento)</h3>}
+                        <OrdersTable orders={activeOrdersData.serviceOrders} page={page} totalPages={activeOrdersData.totalPages} query={query} filters={{ status, clientId, technicianId, priority, type, maintenanceArea, dateFrom, dateTo, location }} isArchived={false} />
+                    </div>
 
-                {/* Pagination */}
-                <div className="flex justify-end items-center gap-2 pt-4 border-t border-gray-100">
-                    {page > 1 && (
-                        <Link
-                            href={`/service-orders?${new URLSearchParams({
-                                ...(query && { query }),
-                                ...(status && { status }),
-                                ...(clientId && { clientId }),
-                                ...(technicianId && { technicianId }),
-                                ...(priority && { priority }),
-                                ...(type && { type }),
-                                ...(maintenanceArea && { maintenanceArea }),
-                                ...(dateFrom && { dateFrom }),
-                                ...(dateTo && { dateTo }),
-                                ...(location && { location }),
-                                page: String(page - 1),
-                            }).toString()}`}
-                            className="btn btn-outline btn-sm"
-                        >
-                            Anterior
-                        </Link>
-                    )}
-                    {(page > 1 || page < totalPages) && (
-                        <span className="text-xs font-bold text-gray-500 px-4">
-                            PÁGINA {page} DE {totalPages || 1}
-                        </span>
-                    )}
-                    {page < totalPages && (
-                        <Link
-                            href={`/service-orders?${new URLSearchParams({
-                                ...(query && { query }),
-                                ...(status && { status }),
-                                ...(clientId && { clientId }),
-                                ...(technicianId && { technicianId }),
-                                ...(priority && { priority }),
-                                ...(type && { type }),
-                                ...(maintenanceArea && { maintenanceArea }),
-                                ...(dateFrom && { dateFrom }),
-                                ...(dateTo && { dateTo }),
-                                ...(location && { location }),
-                                page: String(Number(page) + 1),
-                            }).toString()}`}
-                            className="btn btn-outline btn-sm"
-                        >
-                            Próxima
-                        </Link>
+                    {/* Archived Orders Section (Only if split view and data exists) */}
+                    {isSplitView && archivedOrdersData.serviceOrders.length > 0 && (
+                        <div className="space-y-4 pt-4 border-t border-gray-100">
+                            <h3 className="font-bold text-gray-400 flex items-center gap-2 uppercase text-xs tracking-wider"><AlertCircle size={14} /> Histórico / Finalizadas</h3>
+                            <OrdersTable orders={archivedOrdersData.serviceOrders} page={page} totalPages={archivedOrdersData.totalPages} query={query} filters={{ status, clientId, technicianId, priority, type, maintenanceArea, dateFrom, dateTo, location }} isArchived={true} />
+                        </div>
                     )}
                 </div>
+            </div>
+        </div>
+    );
+}
+
+function OrdersTable({ orders, page, totalPages, query, filters, isArchived }) {
+    if (orders.length === 0) {
+        return (
+            <div className="text-center p-12 text-muted-foreground border border-dashed rounded-lg bg-gray-50/50">
+                <div className="flex flex-col items-center gap-2">
+                    <LayoutGrid size={32} className="opacity-20" />
+                    <p>Nenhuma Ordem de Serviço encontrada.</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Helper to render status badge (Local to component scope or pass props? Easier to redefine slightly or keep logic simple)
+    const StatusBadge = ({ os, role }) => {
+        const { label, color } = getPublicStatus(os, role);
+        return (
+            <span className={`text-[10px] px-2 py-0.5 rounded border whitespace-nowrap font-bold uppercase tracking-tight block w-fit ${color}`}>
+                {label}
+            </span>
+        );
+    };
+
+    const getPriorityColor = (p) => {
+        switch (p) {
+            case 'URGENT': return 'text-red-700 font-bold bg-red-50 border-red-100';
+            case 'HIGH': return 'text-orange-700 font-old bg-orange-50 border-orange-100';
+            default: return 'text-gray-600 bg-gray-50 border-gray-100';
+        }
+    };
+
+    const formatPriority = (p) => {
+        if (!p) return '-';
+        if (p === 'URGENT') return 'Urgente';
+        if (p === 'HIGH') return 'Alta';
+        if (p === 'NORMAL') return 'Normal';
+        if (p === 'LOW') return 'Baixa';
+        return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+    };
+
+    return (
+        <div>
+            <div className={`w-full overflow-auto rounded-lg border ${isArchived ? 'border-gray-100 opacity-80' : 'border-gray-200'}`}>
+                <table className="w-full caption-bottom text-sm border-collapse">
+                    <thead className={isArchived ? 'bg-gray-50/50' : 'bg-gray-50'}>
+                        <tr className="border-b transition-colors">
+                            <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider w-[100px]">OS</th>
+                            <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider min-w-[140px]">Status Técnico</th>
+                            <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider min-w-[140px]">Status Comercial</th>
+                            <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider w-[90px]">Prio</th>
+                            <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider min-w-[150px]">Cliente</th>
+                            <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider min-w-[150px]">Equipamento</th>
+                            <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider hidden xl:table-cell">Série</th>
+                            <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider hidden lg:table-cell">Local</th>
+                            <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider whitespace-nowrap hidden 2xl:table-cell">Técnico</th>
+                            <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider hidden lg:table-cell">Data</th>
+                            <th className="h-10 px-4 text-right align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody className="[&_tr:last-child]:border-0 font-medium bg-white">
+                        {orders.map((os) => (
+                            <tr key={os.id} className="border-b hover:bg-slate-50 transition-colors">
+                                <td className="p-3 align-middle">
+                                    <span className="font-mono font-bold text-gray-900 whitespace-nowrap">{os.code}</span>
+                                </td>
+                                <td className="p-3 align-middle">
+                                    <StatusBadge os={os} role="TECH" />
+                                </td>
+                                <td className="p-3 align-middle">
+                                    <StatusBadge os={os} role="BACKOFFICE" />
+                                </td>
+                                <td className="p-3 align-middle">
+                                    <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded border ${getPriorityColor(os.priority)} `}>
+                                        <AlertCircle size={10} />
+                                        {formatPriority(os.priority)}
+                                    </span>
+                                </td>
+                                <td className="p-3 align-middle">
+                                    <span className="text-gray-900 line-clamp-1 max-w-[150px]" title={os.client.name}>
+                                        {os.client.name}
+                                    </span>
+                                </td>
+                                <td className="p-3 align-middle">
+                                    {os.equipment ? (
+                                        <div className="flex flex-col">
+                                            <span className="text-gray-900 leading-none font-bold font-mono text-[11px] uppercase">{os.equipment.partNumber || '-'}</span>
+                                            <span className="text-[10px] text-muted-foreground mt-1 truncate max-w-[120px] font-medium uppercase italic">{os.equipment.name}</span>
+                                        </div>
+                                    ) : (
+                                        <span className="text-muted-foreground italic">-</span>
+                                    )}
+                                </td>
+                                <td className="p-3 align-middle hidden xl:table-cell font-mono text-[11px] text-gray-600">
+                                    {os.equipment?.serialNumber || '-'}
+                                </td>
+                                <td className="p-3 align-middle hidden lg:table-cell">
+                                    <div className="flex items-center gap-1.5">
+                                        {os.serviceLocation === 'EXTERNAL' ? (
+                                            <div className="flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-100 text-[10px] font-bold uppercase">
+                                                <MapPin size={12} /> Campo
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-1 text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 text-[10px] font-bold uppercase">
+                                                <Microscope size={12} /> Lab
+                                            </div>
+                                        )}
+                                    </div>
+                                </td>
+                                <td className="p-3 align-middle hidden 2xl:table-cell">
+                                    {os.technician ? (
+                                        <div className="flex items-center gap-1 text-xs text-gray-700">
+                                            <User size={12} className="text-muted-foreground" />
+                                            <span className="whitespace-nowrap">{os.technician.name.split(' ')[0]}</span>
+                                        </div>
+                                    ) : (
+                                        <span className="text-[10px] text-muted-foreground italic">Pendente</span>
+                                    )}
+                                </td>
+                                <td className="p-3 align-middle hidden lg:table-cell">
+                                    <div className="flex items-center gap-1 text-muted-foreground text-[11px]">
+                                        <Calendar size={12} />
+                                        {new Date(os.createdAt).toLocaleDateString('pt-BR')}
+                                    </div>
+                                </td>
+                                <td className="p-3 align-middle text-right">
+                                    <Link href={`/service-orders/${os.id}`} className="btn btn-ghost hover:bg-slate-100 btn-sm btn-circle text-primary">
+                                        <Settings size={18} />
+                                    </Link>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Pagination (Wait, reusing pagination URL logic for split view implies managing two paginations? Complex. 
+             Ideally split view page controls MAIN pagination (Active). Archived might just show latest 10 or have its own page param?
+             For simplicity, reusing generic pagination for the table passed. But multiple tables with SAME page param will paginate both?
+             That's acceptable for now or only paginate Active.
+             Let's paginate both with same page param for now, assuming user looks at page 2 of both lists.
+            */}
+            <div className="flex justify-end items-center gap-2 pt-4">
+                {page > 1 && (
+                    <Link
+                        href={`/service-orders?${new URLSearchParams({
+                            ...filters,
+                            ...(query && { query }),
+                            page: String(Number(page) - 1),
+                        }).toString()}`}
+                        className="btn btn-outline btn-sm"
+                    >
+                        Anterior
+                    </Link>
+                )}
+                {(page > 1 || page < totalPages) && (
+                    <span className="text-xs font-bold text-gray-500 px-4">
+                        PÁGINA {page} DE {totalPages || 1}
+                    </span>
+                )}
+                {page < totalPages && (
+                    <Link
+                        href={`/service-orders?${new URLSearchParams({
+                            ...filters,
+                            ...(query && { query }),
+                            page: String(Number(page) + 1),
+                        }).toString()}`}
+                        className="btn btn-outline btn-sm"
+                    >
+                        Próxima
+                    </Link>
+                )}
             </div>
         </div>
     );

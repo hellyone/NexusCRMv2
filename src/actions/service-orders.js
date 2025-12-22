@@ -71,7 +71,7 @@ export async function getServiceOrders({
 
     const where = {
         AND: [
-            status ? { status } : {},
+            status ? (Array.isArray(status) ? { status: { in: status } } : { status }) : {},
             clientId ? { clientId: parseInt(clientId) } : {},
             technicianId ? { technicianId: parseInt(technicianId) } : {},
             priority ? { priority } : {},

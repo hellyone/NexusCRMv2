@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ClipboardCheck, ExternalLink, FileCheck, Search, Banknote } from 'lucide-react';
+import { ClipboardCheck, ExternalLink, FileCheck, Search, Banknote, MapPin } from 'lucide-react';
 import { maskCurrency } from '@/utils/masks';
 import { updateServiceOrderStatus } from '@/actions/service-order-items';
 import CommercialDetailsModal from './CommercialDetailsModal';
@@ -22,8 +22,6 @@ export default function InvoicingList({ orders }) {
 
     const handleInvoice = async (os) => {
         const isRejectedReturn = os.statusHistory?.some(h => h.status === 'REJECTED');
-        const actionText = isRejectedReturn ? 'Confirmar liberação de devolução sem reparo?' : 'Confirmar faturamento e liberar saída?';
-
         if (!confirm('Confirmar faturamento? O técnico será notificado para entregar o equipamento na expedição.')) return;
 
         const res = await updateServiceOrderStatus(os.id, 'INVOICED');
@@ -35,73 +33,90 @@ export default function InvoicingList({ orders }) {
     if (orders.length === 0) return null;
 
     return (
-        <div className="card bg-white border p-0 overflow-hidden shadow-sm mb-8">
-            <div className="bg-emerald-50 border-b border-emerald-100 p-4 flex items-center gap-2">
-                <Banknote className="text-emerald-600" size={20} />
-                <h3 className="font-bold text-emerald-900">Aguardando Faturamento / Entrega</h3>
-                <span className="badge bg-emerald-200 text-emerald-800 border-none font-bold">{orders.length}</span>
+        <div className="card bg-white border border-emerald-100 p-0 overflow-hidden shadow-sm mb-8">
+            <div className="bg-emerald-50/50 border-b border-emerald-100 p-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <Banknote className="text-emerald-600" size={18} />
+                    <div>
+                        <h3 className="font-bold text-gray-800 text-sm">Aguardando Faturamento / Entrega</h3>
+                        <p className="text-[10px] text-emerald-700 font-medium">Equipamentos concluídos prontos para emissão de nota e despacho</p>
+                    </div>
+                </div>
+                <span className="badge bg-emerald-100 text-emerald-800 border-none font-bold">{orders.length}</span>
             </div>
 
             <div className="overflow-x-auto">
-                <table className="table w-full">
+                <table className="table w-full border-collapse">
                     <thead>
-                        <tr className="bg-gray-50 border-b border-gray-100">
-                            <th className="text-left py-3 px-6 text-xs font-bold uppercase text-gray-500">OS</th>
-                            <th className="text-left py-3 px-6 text-xs font-bold uppercase text-gray-500">Cliente</th>
-                            <th className="text-left py-3 px-6 text-xs font-bold uppercase text-gray-500">Equipamento</th>
-                            <th className="text-right py-3 px-6 text-xs font-bold uppercase text-gray-500">Valor Total</th>
-                            <th className="text-left py-3 px-6 text-xs font-bold uppercase text-gray-500">Conclusão</th>
-                            <th className="text-center py-3 px-6 text-xs font-bold uppercase text-gray-500">Ações</th>
+                        <tr className="bg-gray-50 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                            <th className="py-3 px-4 text-left w-[140px]">OS</th>
+                            <th className="py-3 px-4 text-left">Cliente</th>
+                            <th className="py-3 px-4 text-left">Equipamento</th>
+                            <th className="py-3 px-4 text-right w-[150px]">Valor Total</th>
+                            <th className="py-3 px-4 text-left w-[120px]">Conclusão</th>
+                            <th className="py-3 px-4 text-center w-[160px]">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                        {orders.map((os) => (
-                            <tr key={os.id} className="hover:bg-gray-50 transition-colors">
-                                <td className="py-4 px-6 font-bold text-primary">
-                                    <Link href={`/service-orders/${os.id}`} className="hover:underline flex items-center gap-2">
-                                        {os.code} <ExternalLink size={14} className="text-muted" />
-                                    </Link>
-                                </td>
-                                <td className="py-4 px-6 text-sm">
-                                    <div className="font-bold text-gray-900">{os.client.name}</div>
-                                    <div className="text-xs text-muted">{os.client.city} - {os.client.state}</div>
-                                </td>
-                                <td className="py-4 px-6 text-sm">
-                                    <div className="font-medium text-gray-800">{os.equipment?.name || 'N/A'}</div>
-                                    <div className="text-xs text-muted">SN: {os.equipment?.serialNumber || '-'}</div>
-                                </td>
-                                <td className="py-4 px-6 text-right font-bold text-gray-900">
-                                    R$ {maskCurrency(os.total?.toFixed(2) || '0')}
-                                </td>
-                                <td className="py-4 px-6 text-sm text-gray-600">
-                                    {os.finishedAt ? new Date(os.finishedAt).toLocaleDateString('pt-BR') : '-'}
-                                </td>
-                                <td className="py-4 px-6">
-                                    <div className="flex justify-center gap-2">
-                                        <button
-                                            onClick={() => setSelectedOS(os)}
-                                            className="btn btn-sm btn-ghost text-primary hover:bg-blue-50"
-                                            title="Ver Detalhes"
-                                        >
-                                            <Search size={16} />
-                                        </button>
-                                        <button
-                                            onClick={() => handleInvoice(os)}
-                                            className={`btn btn-sm text-white border-none gap-2 shadow-sm ${os.statusHistory?.some(h => h.status === 'REJECTED')
-                                                ? 'bg-orange-500 hover:bg-orange-600'
-                                                : 'bg-emerald-600 hover:bg-emerald-700'
-                                                }`}
-                                        >
-                                            {os.statusHistory?.some(h => h.status === 'REJECTED') ? (
-                                                <> <ExternalLink size={16} /> Autorizar Devolução </>
-                                            ) : (
-                                                <> <FileCheck size={16} /> Emitir Nota Fiscal </>
-                                            )}
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
+                        {orders.map((os) => {
+                            const isRejectedReturn = os.statusHistory?.some(h => h.status === 'REJECTED' || h.toStatus === 'REJECTED');
+
+                            return (
+                                <tr key={os.id} className="hover:bg-emerald-50/20 transition-colors">
+                                    <td className="py-2.5 px-4 align-middle whitespace-nowrap">
+                                        <Link href={`/service-orders/${os.id}`} className="font-bold text-sm text-primary font-mono hover:underline inline-flex items-center gap-1.5">
+                                            {os.code} <ExternalLink size={10} className="text-muted" />
+                                        </Link>
+                                    </td>
+                                    <td className="py-2.5 px-4 align-middle">
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold text-gray-800 line-clamp-1">{os.client.name}</span>
+                                            <span className="text-[10px] text-gray-500 flex items-center gap-1 line-clamp-1">
+                                                <MapPin size={10} /> {os.client.city}-{os.client.state}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td className="py-2.5 px-4 align-middle">
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-medium text-gray-700 line-clamp-1 uppercase">{os.equipment?.name || '-'}</span>
+                                            <span className="text-[10px] text-gray-400 font-mono uppercase">{os.equipment?.serialNumber || 'SN: N/A'}</span>
+                                        </div>
+                                    </td>
+                                    <td className="py-2.5 px-4 align-middle text-right">
+                                        <span className="font-bold text-gray-900 text-sm">
+                                            R$ {maskCurrency(os.total?.toFixed(2) || '0')}
+                                        </span>
+                                    </td>
+                                    <td className="py-2.5 px-4 align-middle text-xs text-gray-600">
+                                        {os.finishedAt ? new Date(os.finishedAt).toLocaleDateString('pt-BR') : '-'}
+                                    </td>
+                                    <td className="py-2.5 px-4 align-middle">
+                                        <div className="flex justify-center gap-2">
+                                            <button
+                                                onClick={() => setSelectedOS(os)}
+                                                className="btn btn-xs btn-ghost text-primary hover:bg-blue-50 px-1"
+                                                title="Ver Detalhes"
+                                            >
+                                                <Search size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleInvoice(os)}
+                                                className={`btn btn-xs text-white border-none gap-1.5 shadow-sm font-bold ${isRejectedReturn
+                                                    ? 'bg-orange-500 hover:bg-orange-600'
+                                                    : 'bg-emerald-600 hover:bg-emerald-700'
+                                                    }`}
+                                            >
+                                                {isRejectedReturn ? (
+                                                    <> <ExternalLink size={12} /> Autorizar Devolução </>
+                                                ) : (
+                                                    <> <FileCheck size={12} /> Faturar </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>

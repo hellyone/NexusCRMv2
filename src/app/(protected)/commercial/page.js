@@ -2,15 +2,16 @@ import { getServiceOrders } from '@/actions/service-orders';
 import ApprovalList from '@/components/commercial/ApprovalList';
 import PricingList from '@/components/commercial/PricingList';
 import InvoicingList from '@/components/commercial/InvoicingList';
+import FinishedList from '@/components/commercial/FinishedList';
 import CommercialTracker from '@/components/commercial/CommercialTracker';
-import { Clock, Activity, Search, FileCheck } from 'lucide-react';
+import { Clock, Activity, Search } from 'lucide-react';
 
 export default async function CommercialPage({ searchParams }) {
     const { query } = await searchParams;
 
     // Fetch pending approvals (Specifically for the action list)
     const { serviceOrders: pendingApprovals = [] } = await getServiceOrders({
-        status: 'WAITING_APPROVAL',
+        status: ['WAITING_APPROVAL', 'NEGOTIATING'],
         page: 1
     });
 
@@ -21,9 +22,16 @@ export default async function CommercialPage({ searchParams }) {
     });
 
     // Fetch finished orders (Ready for Invoicing)
-    const { serviceOrders: finishedOrders = [] } = await getServiceOrders({
-        status: 'FINISHED',
+    const { serviceOrders: invoicingOrders = [] } = await getServiceOrders({
+        status: ['FINISHED', 'REJECTED'],
         page: 1
+    });
+
+    // Fetch Historically Finished Orders (Closed Cycle)
+    const { serviceOrders: closedOrders = [] } = await getServiceOrders({
+        status: ['DISPATCHED', 'SCRAPPED', 'ABANDONED', 'WARRANTY_RETURN'],
+        page: 1,
+        limit: 10 // Limit older ones? Or create pagination later. Default limit is usually safe.
     });
 
     // Fetch all active orders for tracking (Analysis, Approved, In Progress, Waiting Parts)
@@ -33,9 +41,9 @@ export default async function CommercialPage({ searchParams }) {
         page: 1
     });
 
-    // Filter active orders based on business needs
+    // Filter active orders based on business needs (Exclude everything else)
     const trackedOrders = activeOrders.filter(os =>
-        ['IN_ANALYSIS', 'APPROVED', 'IN_PROGRESS', 'WAITING_PARTS', 'PAUSED', 'REJECTED'].includes(os.status)
+        ['OPEN', 'IN_ANALYSIS', 'PRICING', 'WAITING_APPROVAL', 'NEGOTIATING', 'APPROVED', 'IN_PROGRESS', 'WAITING_PARTS', 'PAUSED', 'REJECTED', 'TESTING', 'REWORK', 'INVOICED', 'WAITING_COLLECTION', 'WAITING_PICKUP'].includes(os.status)
     );
 
     return (
@@ -77,8 +85,8 @@ export default async function CommercialPage({ searchParams }) {
             )}
 
             {/* Invoicing Section - High Priority */}
-            {finishedOrders.length > 0 && (
-                <InvoicingList orders={finishedOrders} />
+            {invoicingOrders.length > 0 && (
+                <InvoicingList orders={invoicingOrders} />
             )}
 
             {/* General Tracking Section */}
@@ -89,6 +97,13 @@ export default async function CommercialPage({ searchParams }) {
                 </div>
                 <CommercialTracker orders={trackedOrders} />
             </div>
+
+            {/* Archive / History Section */}
+            {closedOrders.length > 0 && (
+                <div className="mt-8 pt-8 border-t border-gray-200">
+                    <FinishedList orders={closedOrders} />
+                </div>
+            )}
         </div>
     );
 }
