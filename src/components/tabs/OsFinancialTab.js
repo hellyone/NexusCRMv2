@@ -1,171 +1,23 @@
 'use client';
 
-import { useState } from 'react';
-import { maskCurrency } from '@/utils/masks';
-import { updateServiceOrderHeader } from '@/actions/service-orders';
-import { Save, Calculator } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import PricingWizard from '../service-orders/PricingWizard';
 
-export default function OsFinancialTab({ os }) {
-    const router = useRouter();
-    const [loading, setLoading] = useState(false);
-    const [laborHours, setLaborHours] = useState(os.laborHours?.toString() || '0');
-    const [displacement, setDisplacement] = useState(os.displacement?.toString() || '0');
-    const [discount, setDiscount] = useState(os.discount?.toString() || '0');
+export default function OsFinancialTab({ os, user }) {
+    // Determine if read-only based on role or status if needed.
+    // For Commercial tab, usually we want to allow editing if status allows.
+    // PricingWizard handles logic internally or we pass isReadOnly.
+    // If Status is APPROVED or CANCELED, maybe read-only? 
+    // Let's assume always editable for Commercial unless final closed, 
+    // BUT PricingWizard has logic for "Simulação" vs "Salvar".
 
-    // Calculate labor cost based on technician's cost per hour
-    const technicianCostPerHour = os.technician?.costPerHour || 0;
-    const calculatedLaborCost = parseFloat(laborHours) * technicianCostPerHour;
-
-    // Totals are calculated on backend and passed via OS object.
-    const grandTotal = os.total;
-    const subtotal = os.totalServices + os.totalParts + (os.laborCost || 0) + (os.displacement || 0);
-
-    const handleSave = async () => {
-        setLoading(true);
-        const formData = new FormData();
-        formData.append('laborHours', laborHours);
-        formData.append('laborCost', calculatedLaborCost.toString());
-        formData.append('displacement', displacement);
-        formData.append('discount', discount);
-
-        const result = await updateServiceOrderHeader(os.id, formData);
-        if (result.error) {
-            alert(result.error);
-        } else {
-            router.refresh();
-        }
-        setLoading(false);
-    };
+    const isReadOnly = ['APPROVED', 'CANCELED', 'INVOICED', 'DISPATCHED', 'FINISHED'].includes(os.status);
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Costs Breakdown */}
-            <div className="card border bg-white shadow-sm p-6">
-                <h3 className="section-title mb-6">Detalhamento de Custos</h3>
-
-                <div className="space-y-3">
-                    <div className="flex justify-between items-center py-2 border-b border-dashed">
-                        <span className="text-muted text-sm">Serviços Executados</span>
-                        <span className="font-medium">R$ {maskCurrency(os.totalServices.toFixed(2))}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-dashed">
-                        <span className="text-muted text-sm">Peças e Materiais</span>
-                        <span className="font-medium">R$ {maskCurrency(os.totalParts.toFixed(2))}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-dashed">
-                        <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                                <span className="text-muted text-sm">Mão de Obra</span>
-                                {os.technician && (
-                                    <span className="text-xs text-gray-400">
-                                        ({os.technician.name}: R$ {maskCurrency(technicianCostPerHour.toFixed(2))}/h)
-                                    </span>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="number"
-                                    step="0.5"
-                                    min="0"
-                                    className="input text-sm w-20"
-                                    value={laborHours}
-                                    onChange={(e) => setLaborHours(e.target.value)}
-                                    placeholder="Horas"
-                                />
-                                <span className="text-xs text-gray-500">horas</span>
-                                {calculatedLaborCost > 0 && (
-                                    <span className="text-xs text-blue-600 font-medium ml-auto">
-                                        = R$ {maskCurrency(calculatedLaborCost.toFixed(2))}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-dashed">
-                        <div className="flex-1">
-                            <span className="text-muted text-sm block mb-1">Deslocamento / Outros</span>
-                            <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                className="input text-sm w-32"
-                                value={displacement}
-                                onChange={(e) => setDisplacement(e.target.value)}
-                                placeholder="0.00"
-                            />
-                        </div>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-dashed">
-                        <div className="flex-1">
-                            <span className="text-muted text-sm block mb-1">Desconto</span>
-                            <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                className="input text-sm w-32"
-                                value={discount}
-                                onChange={(e) => setDiscount(e.target.value)}
-                                placeholder="0.00"
-                            />
-                        </div>
-                    </div>
-                    <div className="pt-4 mt-4 border-t">
-                        <button
-                            onClick={handleSave}
-                            disabled={loading}
-                            className="btn btn-primary w-full"
-                        >
-                            <Save size={18} />
-                            {loading ? 'Salvando...' : 'Salvar Alterações'}
-                        </button>
-                    </div>
-                </div>
+        <div className="space-y-6">
+            <div className="flex items-center gap-2 p-4 bg-orange-50 text-orange-800 rounded-lg text-sm">
+                <p>Gestão comercial e precificação da Ordem de Serviço.</p>
             </div>
-
-            {/* Total Summary */}
-            <div className={`card border p-6 flex flex-col justify-center gap-6 ${os.status === 'WAITING_APPROVAL' ? 'bg-blue-600 text-white border-blue-700 shadow-lg' : 'bg-gray-50 border-gray-200'}`}>
-                <div className="space-y-1 text-center">
-                    <p className={`text-sm uppercase font-bold tracking-wide ${os.status === 'WAITING_APPROVAL' ? 'text-blue-100' : 'text-muted'}`}>
-                        {os.status === 'WAITING_APPROVAL' ? 'Valor Total do Orçamento' : 'Valor Total da OS'}
-                    </p>
-                    <p className={`text-4xl font-extrabold ${os.status === 'WAITING_APPROVAL' ? 'text-white' : 'text-blue-600'}`}>
-                        R$ {maskCurrency(grandTotal.toFixed(2))}
-                    </p>
-                    {os.status === 'WAITING_APPROVAL' && (
-                        <p className="text-xs text-blue-100 mt-2 italic">Validade: 10 dias após a emissão</p>
-                    )}
-                </div>
-
-                <hr className={os.status === 'WAITING_APPROVAL' ? 'border-blue-500/30' : 'border-gray-200'} />
-
-                <div className="space-y-2">
-                    <div className="flex justify-between text-sm text-gray-600">
-                        <span>Serviços</span>
-                        <span>R$ {maskCurrency(os.totalServices.toFixed(2))}</span>
-                    </div>
-                    <div className="flex justify-between text-sm text-gray-600">
-                        <span>Peças</span>
-                        <span>R$ {maskCurrency(os.totalParts.toFixed(2))}</span>
-                    </div>
-                    <div className="flex justify-between text-sm text-gray-600">
-                        <span>Mão de Obra</span>
-                        <span>R$ {maskCurrency((os.laborCost || 0).toFixed(2))}</span>
-                    </div>
-                    <div className="flex justify-between text-sm text-gray-600">
-                        <span>Deslocamento</span>
-                        <span>R$ {maskCurrency((os.displacement || 0).toFixed(2))}</span>
-                    </div>
-                    <div className="flex justify-between text-sm text-gray-600 pt-2 border-t">
-                        <span>Subtotal</span>
-                        <span>R$ {maskCurrency(subtotal.toFixed(2))}</span>
-                    </div>
-                    <div className="flex justify-between text-sm text-green-600">
-                        <span>Descontos</span>
-                        <span>- R$ {maskCurrency((os.discount || 0).toFixed(2))}</span>
-                    </div>
-                </div>
-            </div>
+            <PricingWizard os={os} isReadOnly={isReadOnly} />
         </div>
     );
 }

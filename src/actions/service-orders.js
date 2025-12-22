@@ -345,3 +345,17 @@ export async function updateCommercialDetails(id, data) {
         return { error: "Failed to update details" };
     }
 }
+
+export async function countServiceOrdersByStatus(status) {
+    try {
+        const where = Array.isArray(status) ? { status: { in: status } } : { status };
+
+        const count = await prisma.serviceOrder.count({
+            where
+        });
+        return count;
+    } catch (error) {
+        console.error("Error counting service orders:", error);
+        return 0;
+    }
+}

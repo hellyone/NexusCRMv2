@@ -18,7 +18,7 @@ export default function ServiceOrderTabs({ os, user }) {
         { id: 'general', label: 'Visão Geral', icon: FileText },
         { id: 'services', label: 'Serviços', icon: Wrench },
         { id: 'parts', label: 'Peças', icon: Package },
-        ...(isCommercial ? [{ id: 'financial', label: 'Financeiro', icon: DollarSign }] : []),
+        ...(isCommercial ? [{ id: 'financial', label: 'Comercial', icon: DollarSign }] : []),
         { id: 'history', label: 'Histórico', icon: Clock },
     ];
 

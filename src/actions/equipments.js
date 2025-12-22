@@ -187,14 +187,14 @@ export async function getEquipmentHistory(serialNumber, clientId) {
 
         if (!equipment) return null;
 
-        // Check for active OS (not FINISHED, INVOICED or CANCELED)
+        // Check for active OS (not FINISHED, INVOICED, CANCELED, DISPATCHED, SCRAPPED or ABANDONED)
         const activeOS = equipment.serviceOrders.find(os =>
-            !['FINISHED', 'INVOICED', 'CANCELED'].includes(os.status)
+            !['FINISHED', 'INVOICED', 'CANCELED', 'DISPATCHED', 'SCRAPPED', 'ABANDONED'].includes(os.status)
         );
 
-        // Check for warranty from the last FINISHED, DELIVERED or CLOSED OS
+        // Check for warranty from the last DISPATCHED OS
         const lastFinishedOS = equipment.serviceOrders.find(os =>
-            ['FINISHED', 'DELIVERED', 'CLOSED'].includes(os.status)
+            ['DISPATCHED', 'INVOICED'].includes(os.status)
         );
 
         let warrantyStatus = {

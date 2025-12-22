@@ -1,7 +1,9 @@
+
 import Link from 'next/link';
-import { Plus, Search, User, Calendar, AlertCircle, Microscope, MapPin, LayoutGrid } from 'lucide-react';
+import { Plus, Search, User, Calendar, AlertCircle, Microscope, MapPin, LayoutGrid, Settings } from 'lucide-react';
 import { getServiceOrders } from '@/actions/service-orders';
-import { SERVICE_ORDER_STATUS, PRIORITY_OPTIONS } from '@/utils/status-machine';
+import { SERVICE_ORDER_STATUS, PRIORITY_OPTIONS, getPublicStatus } from '@/utils/status-machine';
+import { auth } from '@/auth';
 import AdvancedFilters from '@/components/service-orders/AdvancedFilters';
 
 export default async function ServiceOrdersPage({ searchParams }) {
@@ -20,6 +22,10 @@ export default async function ServiceOrdersPage({ searchParams }) {
         location = '' // INTERNAL or EXTERNAL
     } = params;
 
+    // Fetch session for role-based status
+    const session = await auth();
+    const currentUser = session?.user;
+
     const { serviceOrders, totalPages } = await getServiceOrders({
         query,
         page: Number(page),
@@ -34,23 +40,35 @@ export default async function ServiceOrdersPage({ searchParams }) {
         serviceLocation: location || null,
     });
 
-    const getStatusColor = (st) => {
-        switch (st) {
-            case 'OPEN': return 'bg-blue-100 text-blue-700 border-blue-200';
-            case 'IN_PROGRESS': return 'bg-amber-100 text-amber-700 border-amber-200';
-            case 'FINISHED': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-            case 'CANCELED': return 'bg-red-100 text-red-700 border-red-200';
-            default: return 'bg-gray-100 text-gray-700 border-gray-200';
-        }
+    // Helper to render status badge
+    // Helper to render status badge
+    const StatusBadge = ({ os, role }) => {
+        const { label, color } = getPublicStatus(os, role);
+        return (
+            <span className={`text-[10px] px-2 py-0.5 rounded border whitespace-nowrap font-bold uppercase tracking-tight block w-fit ${color}`}>
+                {label}
+            </span>
+        );
     };
 
     const getPriorityColor = (p) => {
         switch (p) {
-            case 'URGENT': return 'text-red-600 font-bold';
-            case 'HIGH': return 'text-orange-600 font-medium';
-            default: return 'text-gray-600';
+            case 'URGENT': return 'text-red-700 font-bold bg-red-50 border-red-100';
+            case 'HIGH': return 'text-orange-700 font-old bg-orange-50 border-orange-100';
+            default: return 'text-gray-600 bg-gray-50 border-gray-100';
         }
     };
+
+    const formatPriority = (p) => {
+        if (!p) return '-';
+        if (p === 'URGENT') return 'Urgente';
+        if (p === 'HIGH') return 'Alta';
+        if (p === 'NORMAL') return 'Normal';
+        if (p === 'LOW') return 'Baixa';
+        // Capitalize first letter logic fallback
+        return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+    };
+
 
     const tabClass = (active) => `flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-all border-b-2 -mb-[2px] ${active ? 'border-primary text-primary bg-blue-50/50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`;
 
@@ -135,33 +153,35 @@ export default async function ServiceOrdersPage({ searchParams }) {
                     <table className="w-full caption-bottom text-sm border-collapse">
                         <thead>
                             <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[11px] tracking-wider">OS</th>
-                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[11px] tracking-wider">Status</th>
-                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[11px] tracking-wider">Prio</th>
-                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[11px] tracking-wider">Cliente</th>
-                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[11px] tracking-wider">Equipamento</th>
-                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[11px] tracking-wider">Série</th>
-                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[11px] tracking-wider">Local</th>
-                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[11px] tracking-wider whitespace-nowrap">Técnico Resp.</th>
-                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[11px] tracking-wider">Data</th>
-                                <th className="h-12 px-4 text-right align-middle font-semibold text-muted-foreground uppercase text-[11px] tracking-wider">Ação</th>
+                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider w-[100px]">OS</th>
+                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider min-w-[140px]">Status Técnico</th>
+                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider min-w-[140px]">Status Comercial</th>
+                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider w-[90px]">Prio</th>
+                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider min-w-[150px]">Cliente</th>
+                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider min-w-[150px]">Equipamento</th>
+                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider hidden xl:table-cell">Série</th>
+                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider hidden lg:table-cell">Local</th>
+                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider whitespace-nowrap hidden 2xl:table-cell">Técnico</th>
+                                <th className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider hidden lg:table-cell">Data</th>
+                                <th className="h-12 px-4 text-right align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider">Ação</th>
                             </tr>
                         </thead>
                         <tbody className="[&_tr:last-child]:border-0 font-medium">
                             {serviceOrders.map((os) => (
                                 <tr key={os.id} className="border-b hover:bg-slate-50 transition-colors">
                                     <td className="p-4 align-middle">
-                                        <span className="font-mono font-bold text-gray-900">{os.code}</span>
+                                        <span className="font-mono font-bold text-gray-900 whitespace-nowrap">{os.code}</span>
                                     </td>
                                     <td className="p-4 align-middle">
-                                        <span className={`text-[11px] px-2 py-0.5 rounded border whitespace-nowrap font-bold ${getStatusColor(os.status)}`}>
-                                            {SERVICE_ORDER_STATUS[os.status] || os.status}
-                                        </span>
+                                        <StatusBadge os={os} role="TECH" />
                                     </td>
                                     <td className="p-4 align-middle">
-                                        <span className={`flex items-center gap-1 text-[10px] uppercase font-bold ${getPriorityColor(os.priority)}`}>
+                                        <StatusBadge os={os} role="BACKOFFICE" />
+                                    </td>
+                                    <td className="p-4 align-middle">
+                                        <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded border ${getPriorityColor(os.priority)} `}>
                                             <AlertCircle size={10} />
-                                            {PRIORITY_OPTIONS[os.priority] || os.priority}
+                                            {formatPriority(os.priority)}
                                         </span>
                                     </td>
                                     <td className="p-4 align-middle">
@@ -179,10 +199,10 @@ export default async function ServiceOrdersPage({ searchParams }) {
                                             <span className="text-muted-foreground italic">-</span>
                                         )}
                                     </td>
-                                    <td className="p-4 align-middle font-mono text-[11px] text-gray-600">
+                                    <td className="p-4 align-middle hidden xl:table-cell font-mono text-[11px] text-gray-600">
                                         {os.equipment?.serialNumber || '-'}
                                     </td>
-                                    <td className="p-4 align-middle">
+                                    <td className="p-4 align-middle hidden lg:table-cell">
                                         <div className="flex items-center gap-1.5">
                                             {os.serviceLocation === 'EXTERNAL' ? (
                                                 <div className="flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-100 text-[10px] font-bold uppercase">
@@ -195,7 +215,7 @@ export default async function ServiceOrdersPage({ searchParams }) {
                                             )}
                                         </div>
                                     </td>
-                                    <td className="p-4 align-middle">
+                                    <td className="p-4 align-middle hidden 2xl:table-cell">
                                         {os.technician ? (
                                             <div className="flex items-center gap-1 text-xs text-gray-700">
                                                 <User size={12} className="text-muted-foreground" />
@@ -205,22 +225,22 @@ export default async function ServiceOrdersPage({ searchParams }) {
                                             <span className="text-[10px] text-muted-foreground italic">Pendente</span>
                                         )}
                                     </td>
-                                    <td className="p-4 align-middle">
+                                    <td className="p-4 align-middle hidden lg:table-cell">
                                         <div className="flex items-center gap-1 text-muted-foreground text-[11px]">
                                             <Calendar size={12} />
                                             {new Date(os.createdAt).toLocaleDateString('pt-BR')}
                                         </div>
                                     </td>
                                     <td className="p-4 align-middle text-right">
-                                        <Link href={`/service-orders/${os.id}`} className="btn btn-ghost hover:bg-slate-100 p-2 h-auto text-primary text-xs font-bold uppercase tracking-tight">
-                                            Gerenciar
+                                        <Link href={`/service-orders/${os.id}`} className="btn btn-ghost hover:bg-slate-100 btn-sm btn-circle text-primary">
+                                            <Settings size={18} />
                                         </Link>
                                     </td>
                                 </tr>
                             ))}
                             {serviceOrders.length === 0 && (
                                 <tr>
-                                    <td colSpan="10" className="text-center p-12 text-muted-foreground">
+                                    <td colSpan="11" className="text-center p-12 text-muted-foreground">
                                         <div className="flex flex-col items-center gap-2">
                                             <LayoutGrid size={32} className="opacity-20" />
                                             <p>Nenhuma Ordem de Serviço encontrada.</p>

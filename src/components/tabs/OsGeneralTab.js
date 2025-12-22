@@ -8,7 +8,7 @@ import { updateServiceOrderHeader, updateServiceOrderStatus } from '@/actions/se
 // I should move/import correctly.
 import { updateServiceOrderStatus as updateStatusAction } from '@/actions/service-order-items';
 import { SERVICE_ORDER_STATUS, PRIORITY_OPTIONS, ALLOWED_TRANSITIONS, canTransition } from '@/utils/status-machine';
-import { Save, AlertTriangle, CheckCircle, Play, Pause, XCircle, Clock, Microscope, MapPin, FileText, Package, Activity, Check } from 'lucide-react';
+import { Save, AlertTriangle, CheckCircle, Play, Pause, XCircle, Clock, Microscope, MapPin, FileText, Package, Activity, Check, Printer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useServiceOrderActions } from '@/context/ServiceOrderActionContext';
 
@@ -38,6 +38,11 @@ export default function OsGeneralTab({ os, user }) {
     });
     const [loading, setLoading] = useState(false);
     const [statusLoading, setStatusLoading] = useState(false);
+    const [expeditionChecks, setExpeditionChecks] = useState({
+        accessoriesPresent: false,
+        equipmentSealed: false,
+        backupVerified: false
+    });
 
     const handleChange = (e) => {
         setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -99,6 +104,9 @@ export default function OsGeneralTab({ os, user }) {
     };
 
     const allowed = (ALLOWED_TRANSITIONS[os.status] || []).filter(status => canTransition(os.status, status, userRole));
+
+    // Status indicating a rejection/return flow
+    const isRejectionFlow = ['REJECTED', 'WAITING_PICKUP', 'SCRAPPED', 'ABANDONED'].includes(os.status);
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -241,7 +249,7 @@ export default function OsGeneralTab({ os, user }) {
                         <WorkflowStep
                             title="Análise Técnica"
                             description={os.status === 'IN_ANALYSIS' ? "Técnico realizando o diagnóstico" : "Diagnóstico concluído"}
-                            isDone={['WAITING_APPROVAL', 'APPROVED', 'REJECTED', 'IN_PROGRESS', 'WAITING_PARTS', 'PAUSED', 'FINISHED', 'INVOICED'].includes(os.status)}
+                            isDone={['PRICING', 'WAITING_APPROVAL', 'NEGOTIATING', 'APPROVED', 'REJECTED', 'IN_PROGRESS', 'WAITING_PARTS', 'PAUSED', 'TESTING', 'REWORK', 'FINISHED', 'INVOICED', 'WAITING_COLLECTION', 'WAITING_PICKUP', 'DISPATCHED', 'WARRANTY_RETURN', 'SCRAPPED', 'ABANDONED'].includes(os.status)}
                             isActive={os.status === 'IN_ANALYSIS'}
                         >
                             {allowed.includes('IN_ANALYSIS') && (
@@ -250,21 +258,45 @@ export default function OsGeneralTab({ os, user }) {
                                 </button>
                             )}
                             {os.status === 'IN_ANALYSIS' && isTech && (
-                                <button onClick={() => handleStatusChange('WAITING_APPROVAL')} disabled={statusLoading} className="btn btn-xs bg-purple-600 text-white hover:bg-purple-700 border-none shadow-sm font-bold uppercase py-2 h-auto mt-2">
-                                    <Clock size={12} /> Finalizar e Enviar Orçamento
-                                </button>
+                                <div className="flex flex-col gap-2 mt-2">
+                                    <button onClick={() => handleStatusChange('PRICING')} disabled={statusLoading} className="btn btn-sm w-full bg-yellow-500 text-white hover:bg-yellow-600 border-none shadow-sm font-bold uppercase gap-2">
+                                        <FileText size={14} /> Emitir Laudo Técnico
+                                    </button>
+                                    <button onClick={() => handleStatusChange('REJECTED')} disabled={statusLoading} className="btn btn-sm w-full bg-red-100 text-red-600 hover:bg-red-200 border-none shadow-sm font-bold uppercase gap-2">
+                                        <XCircle size={14} /> Reprovar (Sem Conserto)
+                                    </button>
+                                </div>
                             )}
                         </WorkflowStep>
 
-                        {/* 3. Orçamento */}
+                        {/* 3. Laudo e Orçamento */}
                         <WorkflowStep
-                            title="Proposta Comercial"
-                            description={os.status === 'WAITING_APPROVAL' ? "Aguardando aprovação do cliente" : "Orçamento processado"}
-                            isDone={['APPROVED', 'REJECTED', 'IN_PROGRESS', 'WAITING_PARTS', 'PAUSED', 'FINISHED', 'INVOICED'].includes(os.status)}
-                            isActive={os.status === 'WAITING_APPROVAL'}
+                            title="Proposta Comercial / Negociação"
+                            description={
+                                ['PRICING'].includes(os.status) ? "Comercial precificando" :
+                                    ['WAITING_APPROVAL'].includes(os.status) ? "Orçamento enviado" :
+                                        ['NEGOTIATING'].includes(os.status) ? "Negociando com cliente" :
+                                            "Processo comercial concluído"
+                            }
+                            isDone={['APPROVED', 'REJECTED', 'IN_PROGRESS', 'WAITING_PARTS', 'PAUSED', 'TESTING', 'REWORK', 'FINISHED', 'INVOICED', 'WAITING_COLLECTION', 'WAITING_PICKUP', 'DISPATCHED', 'WARRANTY_RETURN', 'SCRAPPED', 'ABANDONED'].includes(os.status)}
+                            isActive={['PRICING', 'WAITING_APPROVAL', 'NEGOTIATING'].includes(os.status)}
                         >
-                            {os.status === 'WAITING_APPROVAL' && isCommercial && (
+                            <div className="mt-2">
+                                {os.status === 'PRICING' && isCommercial && (
+                                    <div className="p-3 bg-orange-50 border border-orange-100 rounded text-xs text-orange-800">
+                                        <p className="font-bold mb-1">Aguardando Precificação</p>
+                                        <p>Acesse a aba <span className="font-bold">COMERCIAL</span> para montar o orçamento e emitir a proposta.</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {(os.status === 'WAITING_APPROVAL' || os.status === 'NEGOTIATING') && isCommercial && (
                                 <div className="space-y-3 mt-2 p-3 bg-white rounded-lg border border-purple-100 shadow-sm">
+                                    {os.status === 'WAITING_APPROVAL' && (
+                                        <button onClick={() => handleStatusChange('NEGOTIATING')} disabled={statusLoading} className="btn btn-xs w-full mb-2 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-none shadow-sm font-bold uppercase py-2 h-auto">
+                                            Negociar (Cliente pediu alteração)
+                                        </button>
+                                    )}
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-[10px] font-black uppercase text-purple-600">Prazo Estimado</label>
                                         <input
@@ -284,61 +316,217 @@ export default function OsGeneralTab({ os, user }) {
                                     </div>
                                 </div>
                             )}
+                            {os.status === 'ABANDONED' && (
+                                <div className="mt-2 p-2 bg-gray-800 text-white rounded text-[10px] font-bold uppercase text-center">Os Abandonada (+90d)</div>
+                            )}
                         </WorkflowStep>
 
                         {/* 4. Execução / Devolução */}
                         <WorkflowStep
-                            title={os.status === 'REJECTED' ? "Devolução sem Reparo" : "Execução do Serviço"}
+                            title={os.status === 'REJECTED' ? "Devolução sem Reparo" : "Execução (Reparo)"}
                             description={
-                                os.status === 'REJECTED' ? "Equipamento deve ser liberado para o cliente" :
-                                    ['APPROVED', 'IN_PROGRESS', 'WAITING_PARTS', 'PAUSED'].includes(os.status) ? "Trabalho em andamento" :
-                                        "Serviço ou Devolução processada"
+                                os.status === 'REJECTED' ? "Aguardando liberação técnica para devolução" :
+                                    os.status === 'WAITING_PICKUP' ? "Liberado. Aguardando Retirada (Cliente)" :
+                                        os.status === 'SCRAPPED' ? "Equipamento descartado" :
+                                            os.status === 'APPROVED' ? "Aguardando início do reparo" :
+                                                os.status === 'IN_PROGRESS' ? "Técnico realizando reparo" :
+                                                    ['WAITING_PARTS', 'PAUSED'].includes(os.status) ? "Reparo pausado" :
+                                                        "Procedimento concluído"
                             }
-                            isDone={['FINISHED', 'INVOICED'].includes(os.status)}
-                            isActive={['APPROVED', 'REJECTED', 'IN_PROGRESS', 'WAITING_PARTS', 'PAUSED'].includes(os.status)}
-                            color={os.status === 'REJECTED' ? 'bg-red-500' : 'bg-amber-500'}
+                            isDone={['TESTING', 'REWORK', 'FINISHED', 'INVOICED', 'WAITING_COLLECTION', 'DISPATCHED', 'WARRANTY_RETURN', 'WAITING_PICKUP'].includes(os.status)}
+                            isActive={['APPROVED', 'REJECTED', 'IN_PROGRESS', 'WAITING_PARTS', 'PAUSED', 'SCRAPPED', 'REWORK'].includes(os.status)}
+                            color={os.status === 'REJECTED' || os.status === 'SCRAPPED' ? 'bg-red-500' : 'bg-amber-500'}
                         >
                             <div className="flex flex-col gap-2 mt-2">
                                 {os.status === 'REJECTED' && (isTech || isAdmin) && (
-                                    <button onClick={() => handleStatusChange('FINISHED')} disabled={statusLoading} className="btn btn-xs bg-red-600 text-white hover:bg-red-700 border-none shadow-sm font-bold uppercase py-2 h-auto text-[10px]">
-                                        <XCircle size={12} /> Liberar Equipamento (Devolução)
-                                    </button>
+                                    <div className="mt-3 p-3 bg-red-50 border border-red-100 rounded-lg space-y-3">
+                                        <div className="flex justify-between items-center pb-2 border-b border-red-100">
+                                            <span className="text-[10px] font-black uppercase text-red-800">Checklist para Devolução</span>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="flex items-start gap-2 cursor-pointer group">
+                                                <input
+                                                    type="checkbox"
+                                                    className="checkbox checkbox-xs checkbox-error mt-0.5"
+                                                    checked={expeditionChecks.accessoriesPresent}
+                                                    onChange={(e) => setExpeditionChecks(prev => ({ ...prev, accessoriesPresent: e.target.checked }))}
+                                                />
+                                                <span className="text-[11px] text-gray-700 group-hover:text-red-600 transition-colors leading-tight">Opcionais/Acessórios conferidos para devolução</span>
+                                            </label>
+                                            <label className="flex items-start gap-2 cursor-pointer group">
+                                                <input
+                                                    type="checkbox"
+                                                    className="checkbox checkbox-xs checkbox-error mt-0.5"
+                                                    checked={expeditionChecks.equipmentSealed}
+                                                    onChange={(e) => setExpeditionChecks(prev => ({ ...prev, equipmentSealed: e.target.checked }))}
+                                                />
+                                                <span className="text-[11px] text-gray-700 group-hover:text-red-600 transition-colors leading-tight">Equipamento remontado/fechado</span>
+                                            </label>
+                                        </div>
+
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => handleStatusChange('WAITING_PICKUP')}
+                                                disabled={statusLoading || !expeditionChecks.accessoriesPresent || !expeditionChecks.equipmentSealed}
+                                                className="btn btn-xs flex-1 bg-red-600 text-white hover:bg-red-700 border-none shadow-sm font-bold uppercase py-2 h-auto text-[10px]"
+                                            >
+                                                <Package size={12} /> Liberar p/ Devolução
+                                            </button>
+                                            {isAdmin && (
+                                                <button onClick={() => handleStatusChange('SCRAPPED')} disabled={statusLoading} className="btn btn-xs bg-gray-500 text-white hover:bg-gray-600 border-none shadow-sm font-bold uppercase py-2 h-auto text-[10px]">
+                                                    <XCircle size={12} /> Descartar
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
                                 )}
-                                {allowed.includes('IN_PROGRESS') && (
+
+                                {os.status === 'SCRAPPED' && (
+                                    <div className="mt-2 p-2 bg-gray-200 text-gray-500 rounded text-[10px] font-bold uppercase text-center">Processo de Descarte Registrado</div>
+                                )}
+                                {allowed.includes('IN_PROGRESS') && ['APPROVED', 'WAITING_PARTS', 'PAUSED'].includes(os.status) && (
                                     <button onClick={() => handleStatusChange('IN_PROGRESS')} disabled={statusLoading} className="btn btn-xs bg-amber-600 text-white hover:bg-amber-700 border-none shadow-sm font-bold uppercase py-2 h-auto">
                                         <Play size={12} /> Iniciar Reparo
                                     </button>
                                 )}
-                                {os.status === 'IN_PROGRESS' && (
-                                    <button onClick={() => handleStatusChange('FINISHED')} disabled={statusLoading} className="btn btn-xs bg-emerald-600 text-white hover:bg-emerald-700 border-none shadow-sm font-bold uppercase py-2 h-auto">
-                                        <CheckCircle size={12} /> Finalizar Reparo
+
+                                {/* Transition to Testing instead of Finished directly */}
+                                {['IN_PROGRESS', 'REWORK'].includes(os.status) && (isTech || isAdmin) && (
+                                    <button onClick={() => handleStatusChange('TESTING')} disabled={statusLoading} className="btn btn-xs bg-cyan-600 text-white hover:bg-cyan-700 border-none shadow-sm font-bold uppercase py-2 h-auto">
+                                        <Microscope size={12} /> Finalizar Reparo e Iniciar Testes
                                     </button>
                                 )}
                             </div>
                         </WorkflowStep>
 
-                        {/* 5. Conclusão */}
+                        {/* 5. Teste e Validação (Skipped if rejected) */}
+                        {!isRejectionFlow && (
+                            <WorkflowStep
+                                title="Teste & Validação"
+                                description={
+                                    os.status === 'TESTING' ? "Controle de qualidade em andamento" :
+                                        os.status === 'REWORK' ? "Reproved in Test (Rework needed)" :
+                                            "Quality check completed"
+                                }
+                                isDone={['FINISHED', 'INVOICED', 'WAITING_COLLECTION', 'DISPATCHED', 'WARRANTY_RETURN'].includes(os.status)}
+                                isActive={['TESTING'].includes(os.status)}
+                                color='bg-cyan-500'
+                            >
+                                <div className="flex flex-col gap-2 mt-2">
+                                    {os.status === 'TESTING' && (isTech || isAdmin) && (
+                                        <>
+                                            <button onClick={() => handleStatusChange('FINISHED')} disabled={statusLoading} className="btn btn-xs bg-emerald-600 text-white hover:bg-emerald-700 border-none shadow-sm font-bold uppercase py-2 h-auto">
+                                                <CheckCircle size={12} /> Aprovar (Concluir)
+                                            </button>
+                                            <button onClick={() => handleStatusChange('REWORK')} disabled={statusLoading} className="btn btn-xs bg-red-100 text-red-600 hover:bg-red-200 border-none shadow-sm font-bold uppercase py-2 h-auto">
+                                                <AlertTriangle size={12} /> Reprovar (Retrabalho)
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            </WorkflowStep>
+                        )}
+
+                        {/* 6. Conclusão & Faturamento (Skipped if rejected) */}
+                        {!isRejectionFlow && (
+                            <WorkflowStep
+                                title="Conclusão Técnica / Faturamento"
+                                description={os.status === 'FINISHED' ? "Aguardando faturamento" : os.status === 'INVOICED' ? "NF emitida, liberar expedição" : "Processo concluído"}
+                                isDone={['INVOICED', 'WAITING_COLLECTION', 'DISPATCHED', 'WARRANTY_RETURN'].includes(os.status)}
+                                isActive={os.status === 'FINISHED' || os.status === 'INVOICED'}
+                            >
+                                {os.status === 'FINISHED' && isCommercial && (
+                                    <button onClick={() => handleStatusChange('INVOICED')} disabled={statusLoading} className="btn btn-xs bg-teal-600 text-white hover:bg-teal-700 border-none shadow-sm font-bold uppercase py-2 h-auto mt-2">
+                                        <FileText size={12} /> Emitir NF  (Faturar)
+                                    </button>
+                                )}
+
+                                {os.status === 'INVOICED' && (isTech || isAdmin) && (
+                                    <div className="mt-3 p-3 bg-indigo-50 border border-indigo-100 rounded-lg space-y-3">
+                                        <div className="flex justify-between items-center pb-2 border-b border-indigo-100">
+                                            <span className="text-[10px] font-black uppercase text-indigo-800">Checklist para Liberação</span>
+                                            <button
+                                                onClick={() => window.print()}
+                                                className="btn btn-xs btn-ghost text-indigo-600 hover:bg-indigo-100 gap-1 h-6 min-h-0"
+                                                title="Imprimir Laudo Técnico"
+                                            >
+                                                <Printer size={12} /> Laudo
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="flex items-start gap-2 cursor-pointer group">
+                                                <input
+                                                    type="checkbox"
+                                                    className="checkbox checkbox-xs checkbox-primary mt-0.5"
+                                                    checked={expeditionChecks.accessoriesPresent}
+                                                    onChange={(e) => setExpeditionChecks(prev => ({ ...prev, accessoriesPresent: e.target.checked }))}
+                                                />
+                                                <span className="text-[11px] text-gray-700 group-hover:text-primary transition-colors leading-tight">Opcionais/Acessórios conferidos junto ao equipamento</span>
+                                            </label>
+                                            <label className="flex items-start gap-2 cursor-pointer group">
+                                                <input
+                                                    type="checkbox"
+                                                    className="checkbox checkbox-xs checkbox-primary mt-0.5"
+                                                    checked={expeditionChecks.equipmentSealed}
+                                                    onChange={(e) => setExpeditionChecks(prev => ({ ...prev, equipmentSealed: e.target.checked }))}
+                                                />
+                                                <span className="text-[11px] text-gray-700 group-hover:text-primary transition-colors leading-tight">Equipamento limpo e lacrado com selo de garantia</span>
+                                            </label>
+                                            <label className="flex items-start gap-2 cursor-pointer group">
+                                                <input
+                                                    type="checkbox"
+                                                    className="checkbox checkbox-xs checkbox-primary mt-0.5"
+                                                    checked={expeditionChecks.backupVerified}
+                                                    onChange={(e) => setExpeditionChecks(prev => ({ ...prev, backupVerified: e.target.checked }))}
+                                                />
+                                                <span className="text-[11px] text-gray-700 group-hover:text-primary transition-colors leading-tight">Backup do cliente verificado/realizado (se aplicável)</span>
+                                            </label>
+                                        </div>
+
+                                        <button
+                                            onClick={() => handleStatusChange('WAITING_COLLECTION')}
+                                            disabled={statusLoading || !Object.values(expeditionChecks).every(Boolean)}
+                                            className="btn btn-xs w-full bg-indigo-600 text-white hover:bg-indigo-700 border-none shadow-sm font-bold uppercase py-2 h-auto"
+                                        >
+                                            <Package size={12} /> Confirmar Entrega na Expedição
+                                        </button>
+                                    </div>
+                                )}
+                            </WorkflowStep>
+                        )}
+
+                        {/* 7. Expedição (Final) */}
                         <WorkflowStep
-                            title="Conclusão"
-                            description={os.status === 'FINISHED' ? "Aguardando faturamento/entrega" : "Processo finalizado"}
-                            isDone={os.status === 'INVOICED'}
-                            isActive={os.status === 'FINISHED'}
+                            title="Expedição"
+                            description={
+                                os.status === 'WAITING_COLLECTION' ? "Aguardando coleta" :
+                                    os.status === 'WAITING_PICKUP' ? "Aguardando cliente retirar" :
+                                        os.status === 'DISPATCHED' ? "Em garantia / Encerrado" :
+                                            os.status === 'WARRANTY_RETURN' ? "Equipamento retornou (Garantia)" :
+                                                "Pendente"
+                            }
+                            isDone={['DISPATCHED', 'WARRANTY_RETURN'].includes(os.status)}
+                            isActive={['WAITING_COLLECTION', 'DISPATCHED', 'WARRANTY_RETURN', 'WAITING_PICKUP'].includes(os.status)}
+                            isLast={true}
                         >
-                            {os.status === 'FINISHED' && isCommercial && (
-                                <button onClick={() => handleStatusChange('INVOICED')} disabled={statusLoading} className="btn btn-xs bg-blue-600 text-white hover:bg-blue-700 border-none shadow-sm font-bold uppercase py-2 h-auto mt-2">
-                                    <FileText size={12} /> Marcar como Faturado
+                            {os.status === 'WAITING_COLLECTION' && (isCommercial || isAdmin) && (
+                                <button onClick={() => handleStatusChange('DISPATCHED')} disabled={statusLoading} className="btn btn-xs bg-emerald-600 text-white hover:bg-emerald-700 border-none shadow-sm font-bold uppercase py-2 h-auto mt-2">
+                                    <Package size={12} /> Confirmar Coleta / Envio
+                                </button>
+                            )}
+                            {os.status === 'WAITING_PICKUP' && (isCommercial || isAdmin || isTech) && (
+                                <button onClick={() => handleStatusChange('DISPATCHED')} disabled={statusLoading} className="btn btn-xs bg-red-600 text-white hover:bg-red-700 border-none shadow-sm font-bold uppercase py-2 h-auto mt-2">
+                                    <CheckCircle size={12} /> Confirmar Retirada (Cliente Buscou)
+                                </button>
+                            )}
+                            {os.status === 'DISPATCHED' && (isTech || isAdmin) && (
+                                <button onClick={() => handleStatusChange('WARRANTY_RETURN')} disabled={statusLoading} className="btn btn-xs bg-red-100 text-red-600 hover:bg-red-200 border-none shadow-sm font-bold uppercase py-2 h-auto mt-2 opacity-50 hover:opacity-100">
+                                    <AlertTriangle size={12} /> Registrar Retorno em Garantia
                                 </button>
                             )}
                         </WorkflowStep>
-
-                        {/* 6. Faturamento */}
-                        <WorkflowStep
-                            title="Entrega / Faturamento"
-                            description="Fluxo finalizado com sucesso"
-                            isDone={os.status === 'INVOICED'}
-                            isActive={os.status === 'INVOICED'}
-                            isLast={true}
-                        />
 
                         {/* Admin Action: Cancel */}
                         {allowed.includes('CANCELED') && isAdmin && (
@@ -403,8 +591,8 @@ export default function OsGeneralTab({ os, user }) {
                     </div>
                 </div>
 
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }
 
@@ -415,13 +603,13 @@ function WorkflowStep({ title, description, isDone, isActive, isLast = false, co
             <div className={cn(
                 "absolute left-0 top-0.5 w-6 h-6 rounded-full border-2 border-white shadow-sm flex items-center justify-center transition-all duration-500 z-10",
                 isDone ? "bg-emerald-500 text-white" :
-                    isActive ? cn(color, "ring-2 ring-offset-1 ring-opacity-20 animate-pulse scale-105") :
+                    isActive ? cn(color, "animate-pulse ring-4 ring-opacity-30 ring-current scale-110") :
                         "bg-gray-200 text-gray-400"
             )}>
                 {isDone ? (
                     <Check size={14} strokeWidth={4} />
                 ) : (
-                    <div className={cn("w-1 h-1 rounded-full bg-current", !isActive && "opacity-20")} />
+                    <div className={cn("w-2 h-2 rounded-full bg-white", !isActive && "opacity-0")} />
                 )}
             </div>
 

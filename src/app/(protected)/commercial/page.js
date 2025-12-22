@@ -1,7 +1,9 @@
 import { getServiceOrders } from '@/actions/service-orders';
 import ApprovalList from '@/components/commercial/ApprovalList';
+import PricingList from '@/components/commercial/PricingList';
+import InvoicingList from '@/components/commercial/InvoicingList';
 import CommercialTracker from '@/components/commercial/CommercialTracker';
-import { Clock, Activity, Search } from 'lucide-react';
+import { Clock, Activity, Search, FileCheck } from 'lucide-react';
 
 export default async function CommercialPage({ searchParams }) {
     const { query } = await searchParams;
@@ -9,6 +11,18 @@ export default async function CommercialPage({ searchParams }) {
     // Fetch pending approvals (Specifically for the action list)
     const { serviceOrders: pendingApprovals = [] } = await getServiceOrders({
         status: 'WAITING_APPROVAL',
+        page: 1
+    });
+
+    // Fetch orders waiting for pricing
+    const { serviceOrders: pricingOrders = [] } = await getServiceOrders({
+        status: 'PRICING',
+        page: 1
+    });
+
+    // Fetch finished orders (Ready for Invoicing)
+    const { serviceOrders: finishedOrders = [] } = await getServiceOrders({
+        status: 'FINISHED',
         page: 1
     });
 
@@ -21,7 +35,7 @@ export default async function CommercialPage({ searchParams }) {
 
     // Filter active orders based on business needs
     const trackedOrders = activeOrders.filter(os =>
-        ['IN_ANALYSIS', 'APPROVED', 'IN_PROGRESS', 'WAITING_PARTS', 'PAUSED'].includes(os.status)
+        ['IN_ANALYSIS', 'APPROVED', 'IN_PROGRESS', 'WAITING_PARTS', 'PAUSED', 'REJECTED'].includes(os.status)
     );
 
     return (
@@ -45,6 +59,11 @@ export default async function CommercialPage({ searchParams }) {
                 </div>
             </div>
 
+            {/* Pending Pricing Section - TOP Priority */}
+            {pricingOrders.length > 0 && (
+                <PricingList orders={pricingOrders} />
+            )}
+
             {/* Pending Approvals Section - High Priority */}
             {pendingApprovals.length > 0 && (
                 <div className="space-y-4">
@@ -55,6 +74,11 @@ export default async function CommercialPage({ searchParams }) {
                     </div>
                     <ApprovalList orders={pendingApprovals} />
                 </div>
+            )}
+
+            {/* Invoicing Section - High Priority */}
+            {finishedOrders.length > 0 && (
+                <InvoicingList orders={finishedOrders} />
             )}
 
             {/* General Tracking Section */}

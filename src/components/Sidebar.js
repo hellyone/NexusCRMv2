@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Users, Wrench, Settings, ClipboardList, Package, Zap, Menu, X, LogOut, ChevronLeft, ChevronRight, DollarSign, TrendingUp } from 'lucide-react';
+import { countServiceOrdersByStatus } from '@/actions/service-orders';
 import { cn } from '@/lib/utils';
 import SignOutButton from './SignOutButton';
 import Notifications from './Notifications';
@@ -28,6 +29,29 @@ export default function Sidebar({ user }) {
 
     // Simple state for desktop collapse if we wanted it, but let's keep it fixed for now
     const [collapsed, setCollapsed] = useState(false);
+    const [pricingCount, setPricingCount] = useState(0);
+
+    // Fetch pricing count
+    useEffect(() => {
+        console.log('Sidebar Effect Triggered. Role:', role);
+        if (['ADMIN', 'BACKOFFICE'].includes(role)) {
+            const fetchCount = async () => {
+                try {
+                    const count = await countServiceOrdersByStatus(['PRICING', 'WAITING_APPROVAL', 'FINISHED']);
+                    console.log('Fetched Pricing Count:', count);
+                    setPricingCount(count);
+                } catch (err) {
+                    console.error('Error fetching count in sidebar:', err);
+                }
+            };
+            fetchCount();
+            // Refresh every minute
+            const interval = setInterval(fetchCount, 60000);
+            return () => clearInterval(interval);
+        } else {
+            console.log('Sidebar: UseEffect skipped because role is not authorized:', role);
+        }
+    }, [role]);
 
     const visibleItems = allNavItems.filter(item => item.roles.includes(role));
 
@@ -103,7 +127,12 @@ export default function Sidebar({ user }) {
                                     )}
                                 >
                                     <Icon size={18} className={cn("transition-colors", isActive ? "text-[#00D4C4]" : "text-gray-400 group-hover:text-white")} />
-                                    <span>{item.name}</span>
+                                    <span className="flex-1">{item.name}</span>
+                                    {item.href === '/commercial' && pricingCount > 0 && (
+                                        <span className="bg-rose-500 text-white text-[10px] font-bold h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full shadow-sm ml-auto">
+                                            {pricingCount}
+                                        </span>
+                                    )}
                                 </Link>
                             );
                         })}
