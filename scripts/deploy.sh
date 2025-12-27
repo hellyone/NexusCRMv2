@@ -19,7 +19,7 @@ docker compose up -d --build
 # 3. Apply Database Migrations
 echo "🔄 Running Database Migrations..."
 sleep 5 # Wait for DB to be ready
-docker compose exec -T nexus-os npx prisma migrate deploy
+docker compose exec -T nexus-os npx -y prisma@5.22.0 migrate deploy
 
 # 3. Cleanup unused images to save space
 echo "🧹 Cleaning up..."
