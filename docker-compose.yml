@@ -32,22 +32,7 @@ services:
     networks:
       - nexus-network
 
-  gitea:
-    container_name: nexus-gitea
-    image: gitea/gitea:latest
-    restart: always
-    environment:
-      - USER_UID=1000
-      - USER_GID=1000
-    volumes:
-      - gitea_data:/data
-      - /etc/timezone:/etc/timezone:ro
-      - /etc/localtime:/etc/localtime:ro
-    ports:
-      - "3001:3000" # Gitea Web UI available at http://localhost:3001
-      - "2222:22"   # SSH port for git operations
-    networks:
-      - nexus-network
+
 
 networks:
   nexus-network:
@@ -55,4 +40,3 @@ networks:
 
 volumes:
   postgres_data:
-  gitea_data:
