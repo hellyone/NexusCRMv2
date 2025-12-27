@@ -73,10 +73,12 @@ export default async function ServiceOrdersPage({ searchParams }) {
                     <h1 className="text-2xl font-bold">Ordens de Serviço</h1>
                     <p className="text-muted text-sm">Gerencie atendimentos e serviços técnicos</p>
                 </div>
-                <Link href="/service-orders/new" className="btn btn-primary">
-                    <Plus size={18} />
-                    Nova OS
-                </Link>
+                {['ADMIN', 'BACKOFFICE'].includes(currentUser?.role) && (
+                    <Link href="/service-orders/new" className="btn btn-primary">
+                        <Plus size={18} />
+                        Nova OS
+                    </Link>
+                )}
             </div>
 
             {/* Category Tabs */}

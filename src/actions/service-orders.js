@@ -155,6 +155,11 @@ export async function getServiceOrder(id) {
 }
 
 export async function createServiceOrder(formData) {
+    const session = await auth();
+    if (!session || !['ADMIN', 'BACKOFFICE'].includes(session.user.role)) {
+        return createErrorResponse("Você não tem permissão para abrir novas Ordens de Serviço.");
+    }
+
     const rawData = Object.fromEntries(formData.entries());
 
     // Sanitize input
