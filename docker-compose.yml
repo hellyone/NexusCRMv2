@@ -13,7 +13,8 @@ services:
       - DATABASE_URL=postgresql://nexus:securepassword@db:5432/nexus_os?schema=public
       # Next Auth Secret (Generate a new one for production!)
       - AUTH_SECRET=change_me_in_production_to_a_long_random_string
-      - NEXTAUTH_URL=http://localhost:3000
+      - AUTH_TRUST_HOST=true
+      - NEXTAUTH_URL=http://167.126.15.187:3000
     depends_on:
       - db
     networks:
