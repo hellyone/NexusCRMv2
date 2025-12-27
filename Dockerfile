@@ -25,6 +25,9 @@ ENV NEXT_TELEMETRY_DISABLED 1
 # Generate Prisma Client
 RUN npx prisma generate
 
+# Set dummy secret to pass auth.js validation during build
+ENV AUTH_SECRET="dummy_secret_for_build"
+
 RUN npm run build
 
 # Production image, copy all the files and run next
