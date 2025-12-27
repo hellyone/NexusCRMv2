@@ -16,8 +16,6 @@ export default async function DashboardPage({ searchParams }) {
 
     case 'BACKOFFICE':
     case 'COMERCIAL':
-      return <CommercialPage searchParams={searchParams} />;
-
     case 'ADMIN':
     default:
       return <AdminDashboard />;

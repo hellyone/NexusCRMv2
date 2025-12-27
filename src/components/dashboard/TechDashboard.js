@@ -171,15 +171,7 @@ export default async function TechDashboard({ user }) {
                     <Card>
                         <Title>Ações Rápidas</Title>
                         <div className="mt-4 grid grid-cols-1 gap-3">
-                            <Link href="/service-orders/new" className="group flex items-center gap-3 p-3 rounded-lg border hover:border-blue-500 hover:bg-blue-50 transition-all">
-                                <div className="bg-blue-100 p-2 rounded-full text-blue-600 group-hover:bg-blue-200">
-                                    <PlusCircle size={20} />
-                                </div>
-                                <div>
-                                    <div className="font-bold text-gray-800 group-hover:text-blue-700">Nova OS</div>
-                                    <div className="text-xs text-gray-500">Abrir chamado avulso</div>
-                                </div>
-                            </Link>
+                            {/* 'Nova OS' removed for technicians */}
 
                             <Link href="/parts" className="group flex items-center gap-3 p-3 rounded-lg border hover:border-orange-500 hover:bg-orange-50 transition-all">
                                 <div className="bg-orange-100 p-2 rounded-full text-orange-600 group-hover:bg-orange-200">
