@@ -13,6 +13,11 @@ echo "🐳 Rebuilding Containers..."
 docker compose down
 docker compose up -d --build
 
+# 3. Apply Database Migrations
+echo "🔄 Running Database Migrations..."
+sleep 5 # Wait for DB to be ready
+docker compose exec -T nexus-os npx prisma migrate deploy
+
 # 3. Cleanup unused images to save space
 echo "🧹 Cleaning up..."
 docker image prune -f
