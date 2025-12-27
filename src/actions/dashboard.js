@@ -20,59 +20,59 @@ const getCachedDashboardStats = unstable_cache(
             revenueMonth,
             lowStockItems
         ] = await Promise.all([
-        // 1. OS Abertas
-        prisma.serviceOrder.count({ where: { status: 'OPEN' } }),
+            // 1. OS Abertas
+            prisma.serviceOrder.count({ where: { status: 'OPEN' } }),
 
-        // 2. OS Em Andamento
-        prisma.serviceOrder.count({ where: { status: 'IN_PROGRESS' } }),
+            // 2. OS Em Andamento
+            prisma.serviceOrder.count({ where: { status: 'IN_PROGRESS' } }),
 
-        // 3. OS Finalizadas (Este Mês)
-        prisma.serviceOrder.count({
-            where: {
-                status: 'FINISHED',
-                finishedAt: {
-                    gte: startOfCurrentMonth,
-                    lte: endOfCurrentMonth
+            // 3. OS Finalizadas (Este Mês)
+            prisma.serviceOrder.count({
+                where: {
+                    status: 'FINISHED',
+                    finishedAt: {
+                        gte: startOfCurrentMonth,
+                        lte: endOfCurrentMonth
+                    }
                 }
-            }
-        }),
+            }),
 
-        // 4. OS Atrasadas (Agendada < Agora e Não Finalizada)
-        prisma.serviceOrder.count({
-            where: {
-                status: { not: 'FINISHED' },
-                scheduledAt: { lt: now }
-            }
-        }),
-
-        // 5. Receita do Mês (Soma total de OS Finalizadas)
-        prisma.serviceOrder.aggregate({
-            _sum: { total: true },
-            where: {
-                status: 'FINISHED',
-                finishedAt: {
-                    gte: startOfCurrentMonth,
-                    lte: endOfCurrentMonth
+            // 4. OS Atrasadas (Agendada < Agora e Não Finalizada)
+            prisma.serviceOrder.count({
+                where: {
+                    status: { not: 'FINISHED' },
+                    scheduledAt: { lt: now }
                 }
-            }
-        }),
+            }),
 
-        // 6. Alertas de Estoque (Estoque <= Mínimo)
-        // Note: Prisma doesn't support field comparison in where clause easily
-        // So we fetch parts and filter in memory
-        prisma.part.findMany({
-            where: { isActive: true },
-            take: 100, // Get more to filter
-            select: {
-                id: true,
-                name: true,
-                stockQuantity: true,
-                minStock: true,
-                unit: true
-            },
-            orderBy: { stockQuantity: 'asc' }
-        })
-    ]);
+            // 5. Receita do Mês (Soma total de OS Finalizadas)
+            prisma.serviceOrder.aggregate({
+                _sum: { total: true },
+                where: {
+                    status: 'FINISHED',
+                    finishedAt: {
+                        gte: startOfCurrentMonth,
+                        lte: endOfCurrentMonth
+                    }
+                }
+            }),
+
+            // 6. Alertas de Estoque (Estoque <= Mínimo)
+            // Note: Prisma doesn't support field comparison in where clause easily
+            // So we fetch parts and filter in memory
+            prisma.part.findMany({
+                where: { isActive: true },
+                take: 100, // Get more to filter
+                select: {
+                    id: true,
+                    name: true,
+                    stockQuantity: true,
+                    minStock: true,
+                    unit: true
+                },
+                orderBy: { stockQuantity: 'asc' }
+            })
+        ]);
 
         // Filter low stock items
         const filteredLowStock = lowStockItems.filter(part => part.stockQuantity <= part.minStock).slice(0, 5);
@@ -104,4 +104,62 @@ export async function getDashboardStats() {
     if (!session) return null;
 
     return await getCachedDashboardStats();
+}
+
+// New function for Technician-specific stats
+export async function getTechnicianStats(userId) {
+    const session = await auth();
+    if (!session) return null;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const [
+        myOpen,
+        myInProgress,
+        myDoneToday,
+        queueCount
+    ] = await Promise.all([
+        // My Open/Pending
+        prisma.serviceOrder.count({
+            where: {
+                technicianId: parseInt(userId),
+                status: { in: ['OPEN', 'PENDING', 'WAITING_PARTS', 'WAITING_APPROVAL'] } // Broad "Pending" definition
+            }
+        }),
+
+        // My In Progress
+        prisma.serviceOrder.count({
+            where: {
+                technicianId: parseInt(userId),
+                status: 'IN_PROGRESS'
+            }
+        }),
+
+        // My Done Today
+        prisma.serviceOrder.count({
+            where: {
+                technicianId: parseInt(userId),
+                status: 'FINISHED',
+                updatedAt: { gte: today, lt: tomorrow }
+            }
+        }),
+
+        // Queue (Open & Unassigned)
+        prisma.serviceOrder.count({
+            where: {
+                status: 'OPEN',
+                technicianId: null
+            }
+        })
+    ]);
+
+    return {
+        myOpen,
+        myInProgress,
+        myDoneToday,
+        queueCount
+    };
 }
