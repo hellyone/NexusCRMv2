@@ -46,6 +46,8 @@ RUN apk add --no-cache openssl
 
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+# Force copy node_modules to ensure native deps like bcryptjs are present
+COPY --from=builder /app/node_modules ./node_modules
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
