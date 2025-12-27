@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Play, CheckCircle, Package, MapPin, Phone, User, Monitor } from 'lucide-react';
-import { updateServiceOrderStatus } from '@/actions/service-orders';
+import { updateServiceOrderStatus } from '@/actions/service-order-items';
 import { useRouter } from 'next/navigation';
 
 export default function FieldServiceOrderView({ os }) {

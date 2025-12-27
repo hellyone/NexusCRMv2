@@ -1,0 +1,16 @@
+terraform
+node_modules
+.next
+.git
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.idea
+.vscode
+*.md

@@ -3,7 +3,7 @@ import { getEquipment } from '@/actions/equipments';
 import EquipmentImageGallery from '@/components/equipment/EquipmentImageGallery';
 import Link from 'next/link';
 import { Edit, ArrowLeft, Package, Calendar, MapPin, AlertCircle, Clock, ExternalLink, History } from 'lucide-react';
-import { getStatusBadge } from '@/utils/status-machine';
+// import { getStatusBadge } from '@/utils/status-machine';
 
 export default async function EquipmentDetailPage({ params }) {
     const { id } = await params;
@@ -62,7 +62,11 @@ export default async function EquipmentDetailPage({ params }) {
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Status Atual</label>
-                                <div>{getStatusBadge ? getStatusBadge(equipment.status) : equipment.status}</div>
+                                <div>
+                                    <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs font-bold uppercase">
+                                        {equipment.status}
+                                    </span>
+                                </div>
                             </div>
                             {equipment.serialNumber && (
                                 <div className="space-y-1">
