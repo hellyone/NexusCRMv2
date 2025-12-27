@@ -1,4 +1,7 @@
-#!/bin/bash
+
+# Strict error handling
+set -e
+
 
 # Deployment Script for Nexus OS
 
