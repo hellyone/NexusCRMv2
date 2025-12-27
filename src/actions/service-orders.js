@@ -98,21 +98,35 @@ export async function getServiceOrders({
     };
 
     // Role-based filtering
+    // Role-based filtering
     if (user) {
-        if (user.role === 'TECH_INTERNAL') {
-            const specialties = user.specialties ? JSON.parse(user.specialties) : [];
-            // Show if: Area matches specialty OR Assigned to me
-            where.AND.push({
-                OR: [
-                    { maintenanceArea: { in: specialties } },
-                    { technicianId: user.technicianId }
+        // Shared Logic: Always allow seeing what is assigned to me.
+        // Plus, if I am internal, I see my area.
+        // Plus, if we want "Queue" visibility, we should allow seeing OPEN + Unassigned.
+
+        // For simplicity in this "Field Dashboard" context:
+        // We want Techs to see: (Assigned to Me) OR (Open AND Unassigned)
+        // Previous strict logic was hiding potential work.
+
+        if (['TECH_INTERNAL', 'TECH_FIELD'].includes(user.role)) {
+            const orConditions = [
+                { technicianId: parseInt(user.id) } // Assigned to me
+            ];
+
+            if (user.role === 'TECH_INTERNAL' && user.specialties) {
+                const specialties = JSON.parse(user.specialties);
+                orConditions.push({ maintenanceArea: { in: specialties } });
+            }
+
+            // ALLOW VIEWING QUEUE (Open & Unassigned)
+            orConditions.push({
+                AND: [
+                    { status: 'OPEN' },
+                    { technicianId: null }
                 ]
             });
-        } else if (user.role === 'TECH_FIELD') {
-            // Show only assigned to me
-            where.AND.push({
-                technicianId: user.technicianId
-            });
+
+            where.AND.push({ OR: orConditions });
         }
         // ADMIN / BACKOFFICE see everything
     }

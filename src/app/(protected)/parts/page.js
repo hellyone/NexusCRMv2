@@ -13,6 +13,10 @@ export default async function PartsPage({ searchParams }) {
 
     const stockLabel = 'Estoque Total';
 
+    const { auth } = await import('@/auth');
+    const session = await auth();
+    const isAdmin = ['ADMIN', 'BACKOFFICE'].includes(session?.user?.role);
+
     return (
         <div className="flex flex-col gap-6">
             <div className="flex justify-between items-center">
@@ -20,14 +24,16 @@ export default async function PartsPage({ searchParams }) {
                     <h1 className="text-2xl font-bold">Estoque de Peças</h1>
                     <p className="text-muted text-sm">Gerencie inventário, custos e movimentações</p>
                 </div>
-                <Link href="/parts/new" className="btn btn-primary">
-                    <Plus size={18} />
-                    Novo Item
-                </Link>
+                {isAdmin && (
+                    <Link href="/parts/new" className="btn btn-primary">
+                        <Plus size={18} />
+                        Novo Item
+                    </Link>
+                )}
             </div>
 
             <div className="card flex flex-col gap-4">
-                <StockTabs />
+                {isAdmin && <StockTabs />}
 
                 {/* Search Bar */}
                 <form className="flex gap-2">
