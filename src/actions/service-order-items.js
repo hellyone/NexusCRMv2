@@ -127,6 +127,12 @@ export async function addPartToServiceOrder(serviceOrderId, partId, quantity) {
     const part = await prisma.part.findUnique({ where: { id: parseInt(partId) } });
     if (!part) return { error: 'Peça não encontrada.' };
 
+    // Validation: Technicians cannot use SALE-only items
+    const userRole = session?.user?.role;
+    if (['TECH_INTERNAL', 'TECH_FIELD'].includes(userRole) && part.usageType === 'SALE') {
+        return { error: 'Item exclusivo de Venda não pode ser utilizado em Serviços.' };
+    }
+
     if (part.stockQuantity < qty) {
         return { error: `Estoque insuficiente. Disp: ${part.stockQuantity}` };
     }

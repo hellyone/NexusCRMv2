@@ -18,10 +18,18 @@ export async function getParts({ query = '', page = 1, lowStock = false, categor
 
     // But for this specific replacement, I focus on fixing the column names first.
 
+    // Auth Check for Role-based filtering
+    const { auth } = await import('@/auth');
+    const session = await auth();
+    const userRole = session?.user?.role;
+    const isTech = ['TECH_INTERNAL', 'TECH_FIELD'].includes(userRole);
+
     const where = {
         AND: [
             activeOnly ? { isActive: true } : {},
             category ? { category } : {},
+            // Techs only see SERVICE or BOTH items
+            isTech ? { usageType: { in: ['SERVICE', 'BOTH'] } } : {},
             {
                 OR: [
                     { name: { contains: query } },
@@ -79,6 +87,11 @@ export async function getPart(id) {
 }
 
 export async function getPartsForSelect({ usageType } = {}) {
+    const { auth } = await import('@/auth');
+    const session = await auth();
+    const userRole = session?.user?.role;
+    const isTech = ['TECH_INTERNAL', 'TECH_FIELD'].includes(userRole);
+
     const where = { isActive: true };
 
     if (usageType) {
@@ -86,6 +99,21 @@ export async function getPartsForSelect({ usageType } = {}) {
             where.usageType = { in: usageType };
         } else {
             where.usageType = usageType;
+        }
+    }
+
+    // Safety Force Filter for Techs
+    if (isTech) {
+        // If query specifically asked for SALE (which shouldn't happen via UI but for safety),
+        // we might block it or just AND it with accessible types.
+        // Let's safe-guard: available types are INTERSECTION of requested + [SERVICE, BOTH]
+        // Actually simplest is:
+        where.usageType = { in: ['SERVICE', 'BOTH'] };
+        // If 'usageType' was requested as 'SALE', this override unfortunately just resets it to SERVICE/BOTH (showing legal items)
+        // effectively filtering out SALES. Better than erroring.
+        if (usageType === 'SALE') {
+            // If they asked for SALE, return nothing
+            return [];
         }
     }
 
