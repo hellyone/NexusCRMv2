@@ -15,7 +15,7 @@ const allNavItems = [
     { name: 'Ordens de Serviço', href: '/service-orders', icon: ClipboardList, roles: ['ADMIN', 'BACKOFFICE', 'TECH_INTERNAL', 'TECH_FIELD'] },
     { name: 'Clientes', href: '/clients', icon: Users, roles: ['ADMIN', 'BACKOFFICE', 'TECH_INTERNAL'] },
     { name: 'Equipamentos', href: '/equipments', icon: Wrench, roles: ['ADMIN', 'BACKOFFICE', 'TECH_INTERNAL'] },
-    { name: 'Peças & Estoque', href: '/parts', icon: Package, roles: ['ADMIN', 'BACKOFFICE'] },
+    { name: 'Peças & Estoque', href: '/parts', icon: Package, roles: ['ADMIN', 'BACKOFFICE', 'TECH_INTERNAL', 'TECH_FIELD'] },
     // Admin config
     { name: 'Configurações', href: '/settings', icon: Settings, roles: ['ADMIN'] },
     // Field Tech

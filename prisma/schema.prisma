@@ -177,7 +177,9 @@ model Part {
   
   // Estoque
   // Estoque
-  stockQuantity   Int      @default(0) // Estoque Total
+  // Estoque
+  stockQuantity   Int      @default(0) // Estoque Venda (Principal)
+  stockService    Int      @default(0) // Estoque Consumo/Interno
   minStock        Int      @default(0)
   maxStock        Int?
   location        String?

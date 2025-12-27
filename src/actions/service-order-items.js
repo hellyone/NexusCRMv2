@@ -133,16 +133,16 @@ export async function addPartToServiceOrder(serviceOrderId, partId, quantity) {
         return { error: 'Item exclusivo de Venda não pode ser utilizado em Serviços.' };
     }
 
-    if (part.stockQuantity < qty) {
-        return { error: `Estoque insuficiente. Disp: ${part.stockQuantity}` };
+    if (part.stockService < qty) {
+        return { error: `Estoque de Consumo insuficiente. Disp: ${part.stockService}` };
     }
 
     try {
         await prisma.$transaction(async (tx) => {
-            // 1. Decrement Stock
+            // 1. Decrement Stock (SERVICE)
             await tx.part.update({
                 where: { id: part.id },
-                data: { stockQuantity: { decrement: qty } }
+                data: { stockService: { decrement: qty } }
             });
 
             // 2. Create Stock Movement (History)

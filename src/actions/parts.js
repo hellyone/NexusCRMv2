@@ -41,7 +41,7 @@ export async function getParts({ query = '', page = 1, lowStock = false, categor
         ],
     };
 
-    const [parts, total] = await Promise.all([
+    const [partsRaw, total] = await Promise.all([
         prisma.part.findMany({
             where,
             select: {
@@ -55,7 +55,9 @@ export async function getParts({ query = '', page = 1, lowStock = false, categor
                 ncm: true,
                 costPrice: true,
                 salePrice: true,
-                stockQuantity: true, // Unified
+                // DUAL STOCK LOGIC:
+                stockQuantity: true,
+                stockService: true,
                 usageType: true,
                 minStock: true,
                 maxStock: true,
@@ -72,6 +74,14 @@ export async function getParts({ query = '', page = 1, lowStock = false, categor
         }),
         prisma.part.count({ where }),
     ]);
+
+    // Post-process: Override stockQuantity for technicians to show Service Stock
+    const parts = partsRaw.map(p => {
+        if (isTech) {
+            return { ...p, stockQuantity: p.stockService };
+        }
+        return p;
+    });
 
     return {
         parts,
@@ -237,7 +247,8 @@ export async function updateStock(id, quantity, type, reason, stockType = 'sales
         }
     }
 
-    let newQuantity = part.stockQuantity;
+    let currentQty = validStockType === 'SERVICE' ? part.stockService : part.stockQuantity;
+    let newQuantity = currentQty;
     const qty = parseInt(quantity);
 
     if (type === 'IN') {
@@ -245,14 +256,18 @@ export async function updateStock(id, quantity, type, reason, stockType = 'sales
     } else if (type === 'OUT') {
         newQuantity -= qty;
         if (newQuantity < 0) {
-            return { error: `Estoque insuficiente. Disp: ${part.stockQuantity}, Saída: ${qty}` };
+            return { error: `Estoque insuficiente em ${validStockType}. Disp: ${currentQty}, Saída: ${qty}` };
         }
     }
 
     try {
+        const updateData = validStockType === 'SERVICE'
+            ? { stockService: newQuantity }
+            : { stockQuantity: newQuantity };
+
         await prisma.part.update({
             where: { id: parseInt(id) },
-            data: { stockQuantity: newQuantity }
+            data: updateData
         });
 
         // Register Movement

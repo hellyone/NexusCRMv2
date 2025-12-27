@@ -28,6 +28,8 @@ services:
       - POSTGRES_USER=nexus
       - POSTGRES_PASSWORD=securepassword
       - POSTGRES_DB=nexus_os
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
