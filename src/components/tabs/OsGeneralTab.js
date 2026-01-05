@@ -519,10 +519,10 @@ export default function OsGeneralTab({ os, user }) {
                             {os.status === 'INVOICED' && !isRejectionFlow && isTech && (
                                 <div className="mt-3 p-3 rounded-lg border bg-green-50 border-green-100 text-green-800">
                                     <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase">
-                                        <CheckCircle size={14} /> NF Emitida - Liberar para Expedição
+                                        <CheckCircle size={14} /> NF Emitida - Aguardando Comercial
                                     </div>
                                     <div className="text-[10px] text-center mt-1 opacity-75">
-                                        Use os botões abaixo para liberar o equipamento
+                                        O comercial irá escolher o método de coleta (transportadora, balcão ou entrega própria)
                                     </div>
                                 </div>
                             )}
@@ -615,8 +615,8 @@ export default function OsGeneralTab({ os, user }) {
                             isActive={['INVOICED', 'WAITING_COLLECTION', 'DISPATCHED', 'WARRANTY_RETURN', 'WAITING_PICKUP'].includes(os.status)}
                             isLast={true}
                         >
-                            {/* 1. Ações de Despacho (Direto de Faturado ou Aguardando) */}
-                            {(os.status === 'INVOICED' || os.status === 'WAITING_COLLECTION' || os.status === 'WAITING_PICKUP') && (isCommercial || isAdmin || isTech) && (
+                            {/* 1. Ações de Despacho (Apenas Comercial escolhe método de coleta) */}
+                            {(os.status === 'INVOICED' || os.status === 'WAITING_COLLECTION' || os.status === 'WAITING_PICKUP') && (isCommercial || isAdmin) && (
                                 <DispatchActions />
                             )}
 
