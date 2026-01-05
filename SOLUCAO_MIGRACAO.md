@@ -58,22 +58,22 @@ sudo docker exec nexus-db psql -U nexus -d nexus_os -c "\d \"ServiceOrder\"" | g
 sudo docker exec -u root nexus-os npx prisma migrate status
 ```
 
-## Alternativa: SQL Manual (Mais Rápido)
+## Alternativa: SQL Manual (MAIS RÁPIDO - Recomendado)
 
 Se quiser adicionar as colunas diretamente sem criar migration:
 
 ```bash
-# Adicionar colunas diretamente no banco
-sudo docker exec nexus-db psql -U nexus -d nexus_os << EOF
-ALTER TABLE "ServiceOrder" ADD COLUMN IF NOT EXISTS "serviceInvoiceNumber" TEXT;
-ALTER TABLE "ServiceOrder" ADD COLUMN IF NOT EXISTS "deliveredToExpeditionAt" TIMESTAMP(3);
-EOF
+# Opção 1: Usar o script SQL (já está no repositório)
+sudo docker exec -i nexus-db psql -U nexus -d nexus_os < scripts/add_new_columns.sql
 
-# Marcar migration problemática como aplicada
+# Opção 2: Executar SQL diretamente
+sudo docker exec nexus-db psql -U nexus -d nexus_os -c "ALTER TABLE \"ServiceOrder\" ADD COLUMN IF NOT EXISTS \"serviceInvoiceNumber\" TEXT;"
+sudo docker exec nexus-db psql -U nexus -d nexus_os -c "ALTER TABLE \"ServiceOrder\" ADD COLUMN IF NOT EXISTS \"deliveredToExpeditionAt\" TIMESTAMP(3);"
+
+# Depois marcar migration problemática como aplicada
 sudo docker exec -u root nexus-os npx prisma migrate resolve --applied 20251227155234_add_stock_service_column
 
-# Criar migration vazia para registrar as alterações (opcional)
-sudo docker exec -u root nexus-os npx prisma migrate resolve --rolled-back 20251227155234_add_stock_service_column
-sudo docker exec -u root nexus-os npx prisma migrate resolve --applied 20251227155234_add_stock_service_column
+# Verificar se funcionou
+sudo docker exec nexus-db psql -U nexus -d nexus_os -c "\d \"ServiceOrder\"" | grep -E "serviceInvoiceNumber|deliveredToExpeditionAt"
 ```
 
