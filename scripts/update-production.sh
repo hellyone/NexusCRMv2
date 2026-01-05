@@ -7,6 +7,20 @@ set -e  # Parar em caso de erro
 echo "🚀 Iniciando atualização do Nexus OS..."
 echo ""
 
+# Detectar comando docker-compose (versão antiga) ou docker compose (versão nova)
+if command -v docker-compose &> /dev/null; then
+    DOCKER_COMPOSE="docker-compose"
+elif docker compose version &> /dev/null; then
+    DOCKER_COMPOSE="docker compose"
+else
+    echo "❌ Erro: docker-compose ou 'docker compose' não encontrado!"
+    echo "Instale Docker Compose ou use 'docker compose' (Docker 20.10+)"
+    exit 1
+fi
+
+echo "📋 Usando: $DOCKER_COMPOSE"
+echo ""
+
 # Cores para output
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -36,7 +50,7 @@ echo ""
 
 # 2. Parar containers
 echo -e "${YELLOW}⏸️  Passo 2: Parando containers...${NC}"
-docker-compose stop nexus-os
+$DOCKER_COMPOSE stop nexus-os
 echo -e "${GREEN}✅ Container nexus-os parado${NC}"
 echo ""
 
@@ -52,13 +66,13 @@ fi
 
 # 4. Rebuild da imagem
 echo -e "${YELLOW}🔨 Passo 4: Reconstruindo imagem Docker...${NC}"
-docker-compose build nexus-os
+$DOCKER_COMPOSE build nexus-os
 echo -e "${GREEN}✅ Imagem reconstruída${NC}"
 echo ""
 
 # 5. Executar migrations
 echo -e "${YELLOW}🗄️  Passo 5: Executando migrations do banco de dados...${NC}"
-docker-compose up -d nexus-os
+$DOCKER_COMPOSE up -d nexus-os
 echo "Aguardando container iniciar..."
 sleep 5
 
@@ -86,7 +100,7 @@ echo ""
 
 # 7. Status final
 echo -e "${YELLOW}📊 Passo 7: Status final...${NC}"
-docker-compose ps
+$DOCKER_COMPOSE ps
 echo ""
 
 echo -e "${GREEN}✅ Atualização concluída!${NC}"
