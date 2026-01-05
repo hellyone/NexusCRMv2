@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { FileDown, Loader } from 'lucide-react';
+import { Printer, Loader } from 'lucide-react';
 
 export default function ReportButton({ os }) {
     const [generating, setGenerating] = useState(false);
 
-    const handleDownload = async () => {
+    const handlePrint = async () => {
         if (generating) return;
 
         try {
@@ -20,17 +20,28 @@ export default function ReportButton({ os }) {
             const doc = <ServiceOrderPdf os={os} />;
             const blob = await pdf(doc).toBlob();
 
-            // 3. Trigger browser download
+            // 3. Open PDF in new window for printing
             const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${os.code}_Laudo.pdf`;
-            document.body.appendChild(link);
-            link.click();
-
-            // 4. Cleanup
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+            const printWindow = window.open(url, '_blank');
+            
+            if (printWindow) {
+                printWindow.onload = () => {
+                    printWindow.print();
+                    // Cleanup after a delay to allow print dialog to open
+                    setTimeout(() => {
+                        URL.revokeObjectURL(url);
+                    }, 1000);
+                };
+            } else {
+                // Fallback: if popup is blocked, create download link
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${os.code}_Laudo.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
         } catch (error) {
             console.error('Erro ao gerar PDF:', error);
             alert('Não foi possível gerar o PDF neste momento. Por favor, tente novamente ou verifique se há bloqueios no navegador.');
@@ -41,7 +52,7 @@ export default function ReportButton({ os }) {
 
     return (
         <button
-            onClick={handleDownload}
+            onClick={handlePrint}
             disabled={generating}
             className="btn btn-outline gap-2 bg-white min-w-[160px] justify-center"
         >
@@ -52,8 +63,8 @@ export default function ReportButton({ os }) {
                 </>
             ) : (
                 <>
-                    <FileDown size={18} />
-                    {os.status === 'WAITING_APPROVAL' ? 'Baixar Orçamento' : 'Baixar Laudo'}
+                    <Printer size={18} />
+                    {os.status === 'WAITING_APPROVAL' ? 'Imprimir Orçamento' : 'Imprimir Laudo'}
                 </>
             )}
         </button>
