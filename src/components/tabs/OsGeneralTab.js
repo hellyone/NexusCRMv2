@@ -328,6 +328,62 @@ export default function OsGeneralTab({ os, user }) {
                             )}
                             {os.status === 'IN_ANALYSIS' && isTech && (
                                 <div className="flex flex-col gap-2 mt-2">
+                                    {/* Opção para marcar como garantia */}
+                                    {formData.type !== 'WARRANTY' && (
+                                        <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg mb-2">
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    className="checkbox checkbox-sm checkbox-primary"
+                                                    checked={formData.type === 'WARRANTY'}
+                                                    onChange={(e) => {
+                                                        const newType = e.target.checked ? 'WARRANTY' : 'CORRECTIVE';
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            type: newType
+                                                        }));
+                                                        // Salva automaticamente quando marca/desmarca
+                                                        setTimeout(() => {
+                                                            const payload = new FormData();
+                                                            payload.append('type', newType);
+                                                            updateServiceOrderHeader(os.id, payload).then(() => {
+                                                                router.refresh();
+                                                            });
+                                                        }, 100);
+                                                    }}
+                                                />
+                                                <span className="text-xs font-bold text-blue-800 uppercase">
+                                                    Marcar como Garantia
+                                                </span>
+                                            </label>
+                                            <p className="text-[10px] text-blue-600 mt-1 ml-6">
+                                                Equipamento retornou em até 30 dias da última OS
+                                            </p>
+                                        </div>
+                                    )}
+                                    {formData.type === 'WARRANTY' && (
+                                        <div className="p-2 bg-blue-100 border border-blue-300 rounded-lg mb-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs font-bold text-blue-900 uppercase flex items-center gap-1">
+                                                    <CheckCircle size={12} /> OS Marcada como Garantia
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setFormData(prev => ({ ...prev, type: 'CORRECTIVE' }));
+                                                        const payload = new FormData();
+                                                        payload.append('type', 'CORRECTIVE');
+                                                        updateServiceOrderHeader(os.id, payload).then(() => {
+                                                            router.refresh();
+                                                        });
+                                                    }}
+                                                    className="text-[10px] text-blue-700 hover:text-blue-900 font-bold"
+                                                >
+                                                    Remover
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                     <button onClick={() => handleStatusChange('PRICING')} disabled={statusLoading} className="btn btn-sm w-full bg-yellow-500 text-white hover:bg-yellow-600 border-none shadow-sm font-bold uppercase gap-2">
                                         <FileText size={14} /> Emitir Laudo Técnico
                                     </button>
