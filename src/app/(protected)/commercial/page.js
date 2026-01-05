@@ -22,8 +22,9 @@ export default async function CommercialPage({ searchParams }) {
     });
 
     // Fetch finished orders (Ready for Invoicing)
+    // REJECTED não deve aparecer aqui - só aparece após técnico marcar como FINISHED
     const { serviceOrders: invoicingOrders = [] } = await getServiceOrders({
-        status: ['FINISHED', 'REJECTED'],
+        status: 'FINISHED',
         page: 1
     });
 
