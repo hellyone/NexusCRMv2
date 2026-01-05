@@ -20,6 +20,8 @@ Os dados estão seguros porque:
 
 ## 🚀 Passo a Passo de Atualização
 
+**Nota**: Se você usar `docker compose` (com espaço) ao invés de `docker-compose` (com hífen), o script detecta automaticamente. A versão moderna do Docker usa `docker compose`.
+
 ### Método 1: Usando o Script Automático (Recomendado)
 
 1. **Conectar ao servidor:**
@@ -93,8 +95,11 @@ docker stop nexus-os
 #### Passo 4: Reconstruir Imagem
 
 ```bash
-# Se usando docker-compose:
+# Se usando docker-compose (versão antiga):
 docker-compose build nexus-os
+
+# OU se usando docker compose (versão moderna, Docker 20.10+):
+docker compose build nexus-os
 
 # OU se usando docker diretamente (ajuste conforme necessário):
 docker build -t nexus-os-nexus-os .
