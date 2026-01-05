@@ -648,27 +648,6 @@ export default function OsGeneralTab({ os, user }) {
                                 </div>
                             )}
 
-                            {/* Técnico marca entrega na expedição para REJECTED */}
-                            {os.status === 'REJECTED' && (isTech || isAdmin) && !os.deliveredToExpeditionAt && (
-                                <button
-                                    onClick={handleMarkDelivered}
-                                    disabled={deliveryLoading}
-                                    className="btn btn-xs bg-green-600 text-white hover:bg-green-700 border-none shadow-sm font-bold uppercase py-2 h-auto mt-2 w-full"
-                                >
-                                    <Truck size={12} /> Confirmar Entrega na Expedição
-                                </button>
-                            )}
-
-                            {os.status === 'REJECTED' && os.deliveredToExpeditionAt && (isTech || isAdmin) && (
-                                <div className="mt-3 p-3 rounded-lg border bg-green-50 border-green-100 text-green-800">
-                                    <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase">
-                                        <CheckCircle size={14} /> Entregue na Expedição
-                                    </div>
-                                    <div className="text-[10px] text-center mt-1 opacity-75">
-                                        {new Date(os.deliveredToExpeditionAt).toLocaleString('pt-BR')}
-                                    </div>
-                                </div>
-                            )}
 
                             {/* Commercial Action: Invoice */}
                             {(['FINISHED', 'REJECTED'].includes(os.status)) && isCommercial && (
