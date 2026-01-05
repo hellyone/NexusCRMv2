@@ -648,16 +648,48 @@ export default function OsGeneralTab({ os, user }) {
                                 </div>
                             )}
 
+                            {/* Técnico marca entrega na expedição para REJECTED */}
+                            {os.status === 'REJECTED' && (isTech || isAdmin) && !os.deliveredToExpeditionAt && (
+                                <button
+                                    onClick={handleMarkDelivered}
+                                    disabled={deliveryLoading}
+                                    className="btn btn-xs bg-green-600 text-white hover:bg-green-700 border-none shadow-sm font-bold uppercase py-2 h-auto mt-2 w-full"
+                                >
+                                    <Truck size={12} /> Confirmar Entrega na Expedição
+                                </button>
+                            )}
+
+                            {os.status === 'REJECTED' && os.deliveredToExpeditionAt && (isTech || isAdmin) && (
+                                <div className="mt-3 p-3 rounded-lg border bg-green-50 border-green-100 text-green-800">
+                                    <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase">
+                                        <CheckCircle size={14} /> Entregue na Expedição
+                                    </div>
+                                    <div className="text-[10px] text-center mt-1 opacity-75">
+                                        {new Date(os.deliveredToExpeditionAt).toLocaleString('pt-BR')}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Commercial Action: Invoice */}
                             {(['FINISHED', 'REJECTED'].includes(os.status)) && isCommercial && (
                                 <button 
                                     onClick={() => handleStatusChange('INVOICED')} 
-                                    disabled={statusLoading || (os.status === 'FINISHED' && !os.deliveredToExpeditionAt && !isRejectionFlow && os.type !== 'WARRANTY')}
+                                    disabled={statusLoading || (os.status === 'FINISHED' && !os.deliveredToExpeditionAt && !isRejectionFlow && os.type !== 'WARRANTY') || (os.status === 'REJECTED' && !os.deliveredToExpeditionAt)}
                                     className="btn btn-xs bg-teal-600 text-white hover:bg-teal-700 border-none shadow-sm font-bold uppercase py-2 h-auto mt-2 w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                                    title={os.status === 'FINISHED' && !os.deliveredToExpeditionAt && !isRejectionFlow && os.type !== 'WARRANTY' ? 'Aguardando entrega do técnico na expedição' : ''}
+                                    title={
+                                        (os.status === 'FINISHED' && !os.deliveredToExpeditionAt && !isRejectionFlow && os.type !== 'WARRANTY') || (os.status === 'REJECTED' && !os.deliveredToExpeditionAt)
+                                            ? 'Aguardando entrega do técnico na expedição'
+                                            : ''
+                                    }
                                 >
                                     <FileText size={12} /> {isRejectionFlow ? 'Emitir NF de Retorno' : os.type === 'WARRANTY' ? 'Emitir NF (Garantia)' : 'Emitir NF (Faturar)'}
                                 </button>
+                            )}
+
+                            {os.status === 'REJECTED' && isCommercial && !os.deliveredToExpeditionAt && (
+                                <div className="mt-2 p-2 rounded-lg border bg-yellow-50 border-yellow-100 text-yellow-800 text-[10px] text-center">
+                                    ⚠️ Aguardando técnico entregar equipamento na expedição
+                                </div>
                             )}
 
                             {os.status === 'FINISHED' && isCommercial && !os.deliveredToExpeditionAt && !isRejectionFlow && os.type !== 'WARRANTY' && (
