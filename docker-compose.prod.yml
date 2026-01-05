@@ -1,0 +1,63 @@
+# Docker Compose para Produção
+# Use este arquivo como base para produção
+# Exemplo: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+version: '3.8'
+
+services:
+  nexus-os:
+    # Em produção, considere usar uma imagem pré-construída de um registry
+    # image: seu-registry/nexus-os:latest
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    
+    # Não expor porta diretamente em produção - use reverse proxy (Nginx/Traefik)
+    # ports:
+    #   - "3000:3000"
+    
+    environment:
+      - NODE_ENV=production
+      # Use variáveis de ambiente do host ou secrets
+      - DATABASE_URL=${DATABASE_URL}
+      - AUTH_SECRET=${AUTH_SECRET}
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - APP_URL=${APP_URL}
+      
+    # Se usar Traefik como reverse proxy, descomente:
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.http.routers.nexus-os.rule=Host(`seu-dominio.com`)"
+    #   - "traefik.http.routers.nexus-os.entrypoints=websecure"
+    #   - "traefik.http.routers.nexus-os.tls.certresolver=letsencrypt"
+    #   - "traefik.http.services.nexus-os.loadbalancer.server.port=3000"
+    
+    # Logs estruturados
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+
+  db:
+    # Em produção, considere usar um PostgreSQL gerenciado (RDS, etc)
+    # ou configure backups automáticos
+    
+    # Não expor porta diretamente em produção
+    # ports:
+    #   - "5432:5432"
+    
+    # Backup automático (exemplo com cron)
+    # volumes:
+    #   - postgres_data:/var/lib/postgresql/data
+    #   - ./backups:/backups
+    #   # Considere usar um container separado para backups
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+

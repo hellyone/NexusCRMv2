@@ -1,0 +1,33 @@
+# Docker Compose Override Example
+# Copie este arquivo para docker-compose.override.yml para customizações locais
+# O arquivo docker-compose.override.yml é automaticamente carregado pelo docker-compose
+# e NÃO deve ser commitado no git (adicione ao .gitignore)
+
+version: '3.8'
+
+services:
+  nexus-os:
+    # Desenvolvimento local: montar código como volume
+    # volumes:
+    #   - .:/app
+    #   - /app/node_modules
+    #   - /app/.next
+    
+    # Desenvolvimento: expor porta de debug
+    # ports:
+    #   - "9229:9229"  # Node.js debug port
+    
+    environment:
+      - NODE_ENV=development
+      # Override variáveis específicas para desenvolvimento
+      # - DATABASE_URL=postgresql://nexus:devpass@db:5432/nexus_os_dev?schema=public
+
+  db:
+    # Desenvolvimento: expor porta do PostgreSQL
+    ports:
+      - "5432:5432"
+    
+    # Desenvolvimento: usar banco diferente
+    # environment:
+    #   - POSTGRES_DB=nexus_os_dev
+

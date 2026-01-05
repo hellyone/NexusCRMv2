@@ -71,6 +71,10 @@ model Client {
   equipments      Equipment[]
   serviceOrders   ServiceOrder[]
   certifications  ClientCertification[]
+
+  // Índices para performance
+  @@index([isActive])
+  @@index([name])
 }
 
 model ClientCertification {
@@ -124,6 +128,11 @@ model Equipment {
   client          Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   images          EquipmentImage[]
   serviceOrders   ServiceOrder[]
+
+  // Índices para performance
+  @@index([clientId])
+  @@index([status])
+  @@index([serialNumber])
 }
 
 model EquipmentImage {
@@ -195,6 +204,12 @@ model Part {
   
   items           ServiceOrderPart[]
   stockMovements  StockMovement[]
+
+  // Índices para performance
+  @@index([category])
+  @@index([stockQuantity])
+  @@index([isActive, category])
+  @@index([usageType])
 }
 
 // Modelo User para autenticação
@@ -337,6 +352,14 @@ model ServiceOrder {
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  // Índices para performance
+  @@index([status])
+  @@index([clientId])
+  @@index([technicianId])
+  @@index([createdAt])
+  @@index([status, technicianId])
+  @@index([scheduledAt])
 }
 
 model ServiceOrderItem {
@@ -384,6 +407,12 @@ model StockMovement {
   user        User?    @relation(fields: [userId], references: [id])
   
   createdAt   DateTime @default(now())
+
+  // Índices para performance
+  @@index([partId])
+  @@index([createdAt])
+  @@index([type, partId])
+  @@index([serviceOrderId])
 }
 
 model ServiceOrderStatusHistory {
@@ -415,6 +444,12 @@ model Notification {
   readAt      DateTime?
   
   createdAt   DateTime @default(now())
+
+  // Índices para performance
+  @@index([userId])
+  @@index([userId, read])
+  @@index([createdAt])
+  @@index([read, createdAt])
 }
 
 // Model for "Serviceable Equipment Catalog"
