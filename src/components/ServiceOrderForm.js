@@ -275,6 +275,20 @@ export default function ServiceOrderForm() {
         }
     };
 
+    const handleAcceptClientFromHistory = () => {
+        if (clientConflict?.equipmentClientId) {
+            setFormData(prev => ({
+                ...prev,
+                clientId: String(clientConflict.equipmentClientId)
+            }));
+            setClientConflict(null);
+        }
+    };
+
+    const handleKeepCurrentClient = () => {
+        setClientConflict(null);
+    };
+
     const handleAcceptHistoricalPN = () => {
         if (historyConflict) {
             setFormData(prev => ({
