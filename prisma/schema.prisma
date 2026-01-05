@@ -2,7 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
 }
 
@@ -12,65 +12,65 @@ datasource db {
 }
 
 model Client {
-  id              Int      @id @default(autoincrement())
-  
+  id Int @id @default(autoincrement())
+
   // Identificação
-  name            String
-  tradeName       String?
-  document        String   @unique // CNPJ ou CPF
-  personType      String   @default("PJ") // "PF" ou "PJ"
-  stateRegistry   String?  // IE
-  cityRegistry    String?  // IM
-  cnae            String?
-  taxRegime       String?  // Simples Nacional, Lucro Presumido, etc.
-  logoUrl         String?
+  name          String
+  tradeName     String?
+  document      String  @unique // CNPJ ou CPF
+  personType    String  @default("PJ") // "PF" ou "PJ"
+  stateRegistry String? // IE
+  cityRegistry  String? // IM
+  cnae          String?
+  taxRegime     String? // Simples Nacional, Lucro Presumido, etc.
+  logoUrl       String?
 
   // Endereço
-  zipCode         String?
-  street          String?
-  number          String?
-  complement      String?
-  neighborhood    String?
-  city            String?
-  state           String?
+  zipCode      String?
+  street       String?
+  number       String?
+  complement   String?
+  neighborhood String?
+  city         String?
+  state        String?
 
   // Contato
-  phonePrimary    String?
-  phoneSecondary  String?
-  whatsapp        String?
-  emailPrimary    String?
-  emailSecondary  String?
-  
+  phonePrimary   String?
+  phoneSecondary String?
+  whatsapp       String?
+  emailPrimary   String?
+  emailSecondary String?
+
   // Responsável Técnico
-  techName        String?
-  techDocument    String? // CPF
-  techClassId     String? // CREA/CFT
-  techContact     String? // Email ou Telefone
+  techName     String?
+  techDocument String? // CPF
+  techClassId  String? // CREA/CFT
+  techContact  String? // Email ou Telefone
 
   // Financeiro
-  segment         String?
-  creditLimit     Float?   @default(0)
-  paymentTerms    String?
-  
+  segment      String?
+  creditLimit  Float?  @default(0)
+  paymentTerms String?
+
   // Dados Bancários
-  bankName        String?
-  bankAgency      String?
-  bankAccount     String?
-  pixKey          String?
+  bankName    String?
+  bankAgency  String?
+  bankAccount String?
+  pixKey      String?
 
   // Configurações e Auditoria
-  observations    String?
-  operatingHours  String?  // JSON
+  observations         String?
+  operatingHours       String? // JSON
   notificationSettings String? // JSON
-  isActive        Boolean  @default(true)
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  isActive             Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relacionamentos
-  equipments      Equipment[]
-  serviceOrders   ServiceOrder[]
-  certifications  ClientCertification[]
+  equipments     Equipment[]
+  serviceOrders  ServiceOrder[]
+  certifications ClientCertification[]
 
   // Índices para performance
   @@index([isActive])
@@ -78,56 +78,56 @@ model Client {
 }
 
 model ClientCertification {
-  id          Int       @id @default(autoincrement())
-  clientId    Int
-  client      Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  id       Int    @id @default(autoincrement())
+  clientId Int
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   technicianId Int?
   technician   Technician? @relation(fields: [technicianId], references: [id])
 
-  name        String
-  code        String?   // Número do certificado
-  issuedAt    DateTime?
-  expiresAt   DateTime?
-  alertDays   Int       @default(30) // Dias antes do vencimento para alertar
-  
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  name      String
+  code      String? // Número do certificado
+  issuedAt  DateTime?
+  expiresAt DateTime?
+  alertDays Int       @default(30) // Dias antes do vencimento para alertar
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Equipment {
-  id              Int      @id @default(autoincrement())
-  
+  id Int @id @default(autoincrement())
+
   // Dados do Equipamento
-  partNumber      String?
-  name            String   // Tipo/Categoria
-  brand           String
-  model           String
-  serialNumber    String?
-  patrimony       String?
-  
+  partNumber   String?
+  name         String // Tipo/Categoria
+  brand        String
+  model        String
+  serialNumber String?
+  patrimony    String?
+
   // Especificações
-  voltage         String?
-  power           String?
-  
+  voltage String?
+  power   String?
+
   // Datas e Garantia
   manufactureDate DateTime?
   purchaseDate    DateTime?
   warrantyEnd     DateTime?
   isWarranty      Boolean   @default(false)
-  
+
   // Localização e Status
-  location        String?
-  status          String    @default("active") // active, maintenance, inactive
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  location String?
+  status   String  @default("active") // active, maintenance, inactive
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relacionamentos
-  clientId        Int
-  client          Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  images          EquipmentImage[]
-  serviceOrders   ServiceOrder[]
+  clientId      Int
+  client        Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  images        EquipmentImage[]
+  serviceOrders ServiceOrder[]
 
   // Índices para performance
   @@index([clientId])
@@ -136,74 +136,74 @@ model Equipment {
 }
 
 model EquipmentImage {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   url         String
   equipmentId Int
   equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
 }
 
 model Service {
-  id               Int      @id @default(autoincrement())
-  code             String?  @unique // Código interno (ex: "SRV-001")
-  name             String
-  description      String?
-  category         String?
-  
+  id          Int     @id @default(autoincrement())
+  code        String? @unique // Código interno (ex: "SRV-001")
+  name        String
+  description String?
+  category    String?
+
   // Precificação
-  price            Float    @default(0.0)
-  priceType        String   @default("FIXED") // "FIXED" ou "HOURLY"
-  
+  price     Float  @default(0.0)
+  priceType String @default("FIXED") // "FIXED" ou "HOURLY"
+
   // Fiscal
-  serviceCode      String?  // Código de serviço municipal (NFS-e)
-  
+  serviceCode String? // Código de serviço municipal (NFS-e)
+
   // Operacional
-  estimatedMinutes Int?
+  estimatedMinutes  Int?
   requiresChecklist Boolean @default(false)
-  
+
   // Auditoria
-  isActive         Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  
-  items            ServiceOrderItem[]
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items ServiceOrderItem[]
 }
 
 model Part {
-  id              Int      @id @default(autoincrement())
-  name            String
-  description     String?
-  sku             String?  @unique  // Código interno
-  partNumber      String?           // Código Fabricante
-  brand           String?
-  model           String?
-  
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+  sku         String? @unique // Código interno
+  partNumber  String? // Código Fabricante
+  brand       String?
+  model       String?
+
   // Fiscal
-  ncm             String?           // NCM para NF-e
-  
+  ncm String? // NCM para NF-e
+
   // Financeiro
-  costPrice       Float    @default(0.0)
-  salePrice       Float    @default(0.0)
-  
+  costPrice Float @default(0.0)
+  salePrice Float @default(0.0)
+
   // Estoque
   // Estoque
   // Estoque
-  stockQuantity   Int      @default(0) // Estoque Venda (Principal)
-  stockService    Int      @default(0) // Estoque Consumo/Interno
-  minStock        Int      @default(0)
-  maxStock        Int?
-  location        String?
-  unit            String   @default("UN")
-  
+  stockQuantity Int     @default(0) // Estoque Venda (Principal)
+  stockService  Int     @default(0) // Estoque Consumo/Interno
+  minStock      Int     @default(0)
+  maxStock      Int?
+  location      String?
+  unit          String  @default("UN")
+
   // Classificação
-  usageType       String   @default("BOTH") // SALE, SERVICE, BOTH
-  category        String?
-  
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  items           ServiceOrderPart[]
-  stockMovements  StockMovement[]
+  usageType String  @default("BOTH") // SALE, SERVICE, BOTH
+  category  String?
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items          ServiceOrderPart[]
+  stockMovements StockMovement[]
 
   // Índices para performance
   @@index([category])
@@ -214,92 +214,92 @@ model Part {
 
 // Modelo User para autenticação
 model User {
-  id            Int       @id @default(autoincrement())
-  name          String
-  username      String    @unique
-  email         String?   @unique
-  password      String    // Hash bcrypt
-  
-  role          String    @default("TECH_FIELD") // ADMIN, BACKOFFICE, TECH_INTERNAL, TECH_FIELD
-  
-  // Vínculo com Técnico
-  technicianId  Int?      @unique
-  technician    Technician? @relation(fields: [technicianId], references: [id])
-  
-  // Especialidades permitidas (JSON array stringified)
-  specialties   String?   // ex: ["ELECTRONICS", "SERVOMOTOR"]
-  
-  // Segurança
-  isActive      Boolean   @default(true)
-  lastLogin     DateTime?
-  failedAttempts Int      @default(0)
-  lockedUntil   DateTime?
-  
-  // Auditoria
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id       Int     @id @default(autoincrement())
+  name     String
+  username String  @unique
+  email    String? @unique
+  password String // Hash bcrypt
 
-  createdOrders   ServiceOrder[] @relation("CreatedBy")
-  stockMovements  StockMovement[]
+  role String @default("TECH_FIELD") // ADMIN, BACKOFFICE, TECH_INTERNAL, TECH_FIELD
+
+  // Vínculo com Técnico
+  technicianId Int?        @unique
+  technician   Technician? @relation(fields: [technicianId], references: [id])
+
+  // Especialidades permitidas (JSON array stringified)
+  specialties String? // ex: ["ELECTRONICS", "SERVOMOTOR"]
+
+  // Segurança
+  isActive       Boolean   @default(true)
+  lastLogin      DateTime?
+  failedAttempts Int       @default(0)
+  lockedUntil    DateTime?
+
+  // Auditoria
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdOrders        ServiceOrder[]              @relation("CreatedBy")
+  stockMovements       StockMovement[]
   statusHistoryChanges ServiceOrderStatusHistory[]
-  notifications   Notification[]
+  notifications        Notification[]
 }
 
 model Technician {
-  id              Int      @id @default(autoincrement())
-  name            String
-  email           String?  @unique
-  phone           String?
-  whatsapp        String?
-  
+  id       Int     @id @default(autoincrement())
+  name     String
+  email    String? @unique
+  phone    String?
+  whatsapp String?
+
   // Documentos
-  document        String?  // CPF
-  professionalId  String?  // CREA, CFT
-  
+  document       String? // CPF
+  professionalId String? // CREA, CFT
+
   // Profissional
-  specialty       String?
-  certifications  String?
-  hireDate        DateTime?
-  costPerHour     Float    @default(0.0)
-  
+  specialty      String?
+  certifications String?
+  hireDate       DateTime?
+  costPerHour    Float     @default(0.0)
+
   // Acesso
-  user            User?
-  
+  user User?
+
   // Auditoria
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  serviceOrders   ServiceOrder[]
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  serviceOrders        ServiceOrder[]
   clientCertifications ClientCertification[]
 }
 
 model ServiceOrder {
-  id              Int      @id @default(autoincrement())
-  code            String   @unique // OS-2025-0001
-  
+  id   Int    @id @default(autoincrement())
+  code String @unique // OS-2025-0001
+
   // Cabeçalho e Participantes
-  clientId        Int
-  client          Client   @relation(fields: [clientId], references: [id])
-  equipmentId     Int?
-  equipment       Equipment? @relation(fields: [equipmentId], references: [id])
-  technicianId    Int?
-  technician      Technician? @relation(fields: [technicianId], references: [id])
-  
-  createdById     Int?
-  createdBy       User?   @relation("CreatedBy", fields: [createdById], references: [id])
+  clientId     Int
+  client       Client      @relation(fields: [clientId], references: [id])
+  equipmentId  Int?
+  equipment    Equipment?  @relation(fields: [equipmentId], references: [id])
+  technicianId Int?
+  technician   Technician? @relation(fields: [technicianId], references: [id])
+
+  createdById Int?
+  createdBy   User? @relation("CreatedBy", fields: [createdById], references: [id])
 
   // Detalhes da Solicitação
-  type            String   @default("CORRECTIVE") // CORRECTIVE, PREVENTIVE, INSTALLATION
-  maintenanceArea String   @default("GENERAL") // ELECTRONICS, SERVOMOTOR, HYDRAULICS, PNEUMATICS, PLC, GENERAL
-  origin          String?  // PHONE, WHATSAPP, PRESENTIAL
+  type            String  @default("CORRECTIVE") // CORRECTIVE, PREVENTIVE, INSTALLATION
+  maintenanceArea String  @default("GENERAL") // ELECTRONICS, SERVOMOTOR, HYDRAULICS, PNEUMATICS, PLC, GENERAL
+  origin          String? // PHONE, WHATSAPP, PRESENTIAL
   requesterName   String?
   requesterPhone  String?
-  
+
   // Logística
-  serviceLocation String   @default("INTERNAL")
-  serviceAddress  String?  // Endereço completo legado/unificado
-  
+  serviceLocation String  @default("INTERNAL")
+  serviceAddress  String? // Endereço completo legado/unificado
+
   // Endereço Estruturado (Para OS Externa)
   serviceZipCode      String?
   serviceStreet       String?
@@ -309,49 +309,51 @@ model ServiceOrder {
   serviceCity         String?
   serviceState        String?
   serviceReference    String?
-  
+
   // Descrição p/ Campo (Quando não há Serial/PartNumber)
   externalEquipmentDescription String?
-  
+
   // Dados Fiscais (Entrada)
-  entryInvoiceNumber String? // NF de Entrada / Remessa
-  exitInvoiceNumber  String? // Nota Fiscal de Saída (Nova)
-  accessories        String? // Itens que acompanham o equipamento
-  
+  entryInvoiceNumber   String? // NF de Entrada / Remessa
+  serviceInvoiceNumber String? // NF de Serviço (quando aprovado)
+  exitInvoiceNumber    String? // Nota Fiscal de Retorno / Saída
+  accessories          String? // Itens que acompanham o equipamento
+
   // Status e Datas
-  status          String   @default("OPEN")
-  priority        String   @default("NORMAL")
-  
-  openedAt        DateTime @default(now())
-  scheduledAt     DateTime?
-  startedAt       DateTime?
-  finishedAt      DateTime?
-  executionDeadline DateTime?
-  warrantyUntil   DateTime?
-  
+  status   String @default("OPEN")
+  priority String @default("NORMAL")
+
+  openedAt                DateTime  @default(now())
+  scheduledAt             DateTime?
+  startedAt               DateTime?
+  finishedAt              DateTime?
+  deliveredToExpeditionAt DateTime? // Quando técnico entrega equipamento + laudo na expedição
+  executionDeadline       DateTime?
+  warrantyUntil           DateTime?
+
   // Laudo Técnico
-  reportedDefect  String
-  diagnosis       String?
-  solution        String?
-  internalNotes   String?
-  
+  reportedDefect String
+  diagnosis      String?
+  solution       String?
+  internalNotes  String?
+
   // Financeiro
-  totalServices   Float    @default(0.0)
-  totalParts      Float    @default(0.0)
-  laborHours      Float    @default(0.0)
-  laborCost       Float    @default(0.0)
-  displacement    Float    @default(0.0)
-  discount        Float    @default(0.0)
-  total           Float    @default(0.0)
-  
+  totalServices Float @default(0.0)
+  totalParts    Float @default(0.0)
+  laborHours    Float @default(0.0)
+  laborCost     Float @default(0.0)
+  displacement  Float @default(0.0)
+  discount      Float @default(0.0)
+  total         Float @default(0.0)
+
   // Relacionamentos
-  services        ServiceOrderItem[]
-  parts           ServiceOrderPart[]
-  stockMovements  StockMovement[]
-  statusHistory   ServiceOrderStatusHistory[]
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  services       ServiceOrderItem[]
+  parts          ServiceOrderPart[]
+  stockMovements StockMovement[]
+  statusHistory  ServiceOrderStatusHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Índices para performance
   @@index([status])
@@ -363,50 +365,50 @@ model ServiceOrder {
 }
 
 model ServiceOrderItem {
-  id              Int          @id @default(autoincrement())
-  serviceOrderId  Int
-  serviceOrder    ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
-  serviceId       Int
-  service         Service      @relation(fields: [serviceId], references: [id])
-  
-  quantity        Float        @default(1)
-  unitPrice       Float
-  subtotal        Float
-  
-  technicianId    Int?
+  id             Int          @id @default(autoincrement())
+  serviceOrderId Int
+  serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  serviceId      Int
+  service        Service      @relation(fields: [serviceId], references: [id])
+
+  quantity  Float @default(1)
+  unitPrice Float
+  subtotal  Float
+
+  technicianId Int?
 }
 
 model ServiceOrderPart {
-  id              Int          @id @default(autoincrement())
-  serviceOrderId  Int
-  serviceOrder    ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
-  partId          Int
-  part            Part         @relation(fields: [partId], references: [id])
-  
-  quantity        Float
-  unitPrice       Float
-  subtotal        Float
+  id             Int          @id @default(autoincrement())
+  serviceOrderId Int
+  serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  partId         Int
+  part           Part         @relation(fields: [partId], references: [id])
+
+  quantity  Float
+  unitPrice Float
+  subtotal  Float
 }
 
 model StockMovement {
-  id          Int      @id @default(autoincrement())
-  type        String   // "IN", "OUT"
-  stockType   String   @default("sales") // "SALES" or "SERVICE"
-  quantity    Int
-  unitCost    Float?   // Custo no momento da entrada
-  reason      String?  // "PURCHASE", "ADJUSTMENT", "SERVICE_ORDER", "RETURN"
-  
+  id        Int     @id @default(autoincrement())
+  type      String // "IN", "OUT"
+  stockType String  @default("sales") // "SALES" or "SERVICE"
+  quantity  Int
+  unitCost  Float? // Custo no momento da entrada
+  reason    String? // "PURCHASE", "ADJUSTMENT", "SERVICE_ORDER", "RETURN"
+
   // Relations
-  partId      Int
-  part        Part     @relation(fields: [partId], references: [id])
-  
+  partId Int
+  part   Part @relation(fields: [partId], references: [id])
+
   serviceOrderId Int?
   serviceOrder   ServiceOrder? @relation(fields: [serviceOrderId], references: [id])
-  
-  userId      Int?
-  user        User?    @relation(fields: [userId], references: [id])
-  
-  createdAt   DateTime @default(now())
+
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
 
   // Índices para performance
   @@index([partId])
@@ -416,34 +418,34 @@ model StockMovement {
 }
 
 model ServiceOrderStatusHistory {
-  id              Int      @id @default(autoincrement())
-  serviceOrderId  Int
-  serviceOrder    ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
-  
-  fromStatus      String?  // Status anterior
-  toStatus        String   // Novo status
-  notes           String?  // Observações sobre a mudança
-  
-  changedById     Int?
-  changedBy       User?    @relation(fields: [changedById], references: [id])
-  
-  createdAt       DateTime @default(now())
+  id             Int          @id @default(autoincrement())
+  serviceOrderId Int
+  serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+
+  fromStatus String? // Status anterior
+  toStatus   String // Novo status
+  notes      String? // Observações sobre a mudança
+
+  changedById Int?
+  changedBy   User? @relation(fields: [changedById], references: [id])
+
+  createdAt DateTime @default(now())
 }
 
 model Notification {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  type        String   // 'INFO', 'WARNING', 'ERROR', 'SUCCESS'
-  title       String
-  message     String
-  link        String?  // URL para ação relacionada
-  
-  read        Boolean  @default(false)
-  readAt      DateTime?
-  
-  createdAt   DateTime @default(now())
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type    String // 'INFO', 'WARNING', 'ERROR', 'SUCCESS'
+  title   String
+  message String
+  link    String? // URL para ação relacionada
+
+  read   Boolean   @default(false)
+  readAt DateTime?
+
+  createdAt DateTime @default(now())
 
   // Índices para performance
   @@index([userId])

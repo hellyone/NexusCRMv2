@@ -352,6 +352,7 @@ export async function updateCommercialDetails(id, data) {
             where: { id: parseInt(id) },
             data: {
                 entryInvoiceNumber: data.entryInvoiceNumber,
+                serviceInvoiceNumber: data.serviceInvoiceNumber,
                 exitInvoiceNumber: data.exitInvoiceNumber,
             }
         });
@@ -362,6 +363,52 @@ export async function updateCommercialDetails(id, data) {
     } catch (error) {
         console.error("Error updating commercial details:", error);
         return { error: "Failed to update details" };
+    }
+}
+
+export async function markDeliveredToExpedition(id) {
+    const session = await auth();
+    if (!session) {
+        return { error: "Não autorizado" };
+    }
+    
+    const userRole = session.user?.role || 'GUEST';
+    const isTech = userRole.startsWith('TECH');
+    const isAdmin = userRole === 'ADMIN';
+    
+    if (!isTech && !isAdmin) {
+        return { error: "Apenas técnicos podem marcar entrega na expedição" };
+    }
+
+    try {
+        const os = await prisma.serviceOrder.findUnique({ where: { id: parseInt(id) } });
+        if (!os) {
+            return { error: 'OS não encontrada.' };
+        }
+
+        if (os.status !== 'FINISHED') {
+            return { error: 'Apenas OS com status "Concluída" podem ser entregues na expedição.' };
+        }
+
+        if (os.deliveredToExpeditionAt) {
+            return { error: 'Equipamento já foi marcado como entregue na expedição.' };
+        }
+
+        await prisma.serviceOrder.update({
+            where: { id: parseInt(id) },
+            data: {
+                deliveredToExpeditionAt: new Date()
+            }
+        });
+
+        revalidatePath('/service-orders');
+        revalidatePath(`/service-orders/${id}`);
+        revalidatePath('/commercial');
+        
+        return { success: true };
+    } catch (error) {
+        console.error("Error marking delivered to expedition:", error);
+        return { error: 'Erro ao marcar entrega na expedição' };
     }
 }
 

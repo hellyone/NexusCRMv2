@@ -69,6 +69,7 @@ export async function updateServiceOrderStatus(id, newStatus, notes = null, exec
     if (newStatus === 'APPROVED' && executionDeadline) {
         data.executionDeadline = new Date(executionDeadline);
     }
+    // deliveredToExpeditionAt será setado via ação específica quando técnico entrega na expedição
 
     // Use transaction to ensure both update and history are saved
     await prisma.$transaction(async (tx) => {

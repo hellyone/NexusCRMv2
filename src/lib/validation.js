@@ -194,6 +194,7 @@ export const serviceOrderSchema = z.object({
     serviceReference: z.string().max(500).optional().nullable(),
     externalEquipmentDescription: z.string().max(500).optional().nullable(),
     entryInvoiceNumber: z.string().max(100).optional().nullable(),
+    serviceInvoiceNumber: z.string().max(100).optional().nullable(),
     accessories: z.string().max(500).optional().nullable(),
     equipmentSerialNumber: z.string().max(255).optional().nullable(),
     status: z.string().optional().default('OPEN'),

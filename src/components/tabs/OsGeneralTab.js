@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { updateServiceOrderHeader, updateServiceOrderStatus } from '@/actions/service-orders'; // We need status action export
+import { updateServiceOrderHeader, updateServiceOrderStatus, markDeliveredToExpedition } from '@/actions/service-orders'; // We need status action export
 // Oops, logic for status update is in 'service-order-items.js' or 'service-orders.js'? 
 // I put `updateServiceOrderStatus` in `actions/service-order-items.js` previously. 
 // I should move/import correctly.
@@ -38,6 +38,7 @@ export default function OsGeneralTab({ os, user }) {
     });
     const [loading, setLoading] = useState(false);
     const [statusLoading, setStatusLoading] = useState(false);
+    const [deliveryLoading, setDeliveryLoading] = useState(false);
     const [expeditionChecks, setExpeditionChecks] = useState({
         accessoriesPresent: false,
         equipmentSealed: false,
@@ -57,6 +58,18 @@ export default function OsGeneralTab({ os, user }) {
         await updateServiceOrderHeader(os.id, payload);
         setLoading(false);
         router.refresh();
+    };
+
+    const handleMarkDelivered = async () => {
+        if (!confirm('Confirmar que o equipamento e laudo técnico foram entregues na expedição?')) return;
+        setDeliveryLoading(true);
+        const res = await markDeliveredToExpedition(os.id);
+        if (res.error) {
+            alert(res.error);
+        } else {
+            router.refresh();
+        }
+        setDeliveryLoading(false);
     };
 
     const { registerAction, unregisterAction } = useServiceOrderActions();
@@ -494,11 +507,44 @@ export default function OsGeneralTab({ os, user }) {
                             isDone={['INVOICED', 'WAITING_COLLECTION', 'WAITING_PICKUP', 'DISPATCHED', 'WARRANTY_RETURN'].includes(os.status)}
                             isActive={os.status === 'FINISHED' || os.status === 'REJECTED' || (os.status === 'INVOICED' && !['WAITING_PICKUP', 'WAITING_COLLECTION', 'DISPATCHED'].includes(os.status))}
                         >
+                            {/* Técnico marca entrega na expedição */}
+                            {os.status === 'FINISHED' && (isTech || isAdmin) && !os.deliveredToExpeditionAt && (
+                                <button
+                                    onClick={handleMarkDelivered}
+                                    disabled={deliveryLoading}
+                                    className="btn btn-xs bg-green-600 text-white hover:bg-green-700 border-none shadow-sm font-bold uppercase py-2 h-auto mt-2 w-full"
+                                >
+                                    <Truck size={12} /> Confirmar Entrega na Expedição
+                                </button>
+                            )}
+
+                            {os.status === 'FINISHED' && os.deliveredToExpeditionAt && (isTech || isAdmin) && (
+                                <div className="mt-3 p-3 rounded-lg border bg-green-50 border-green-100 text-green-800">
+                                    <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase">
+                                        <CheckCircle size={14} /> Entregue na Expedição
+                                    </div>
+                                    <div className="text-[10px] text-center mt-1 opacity-75">
+                                        {new Date(os.deliveredToExpeditionAt).toLocaleString('pt-BR')}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Commercial Action: Invoice */}
                             {(['FINISHED', 'REJECTED'].includes(os.status)) && isCommercial && (
-                                <button onClick={() => handleStatusChange('INVOICED')} disabled={statusLoading} className="btn btn-xs bg-teal-600 text-white hover:bg-teal-700 border-none shadow-sm font-bold uppercase py-2 h-auto mt-2 w-full">
+                                <button 
+                                    onClick={() => handleStatusChange('INVOICED')} 
+                                    disabled={statusLoading || (os.status === 'FINISHED' && !os.deliveredToExpeditionAt && !isRejectionFlow)}
+                                    className="btn btn-xs bg-teal-600 text-white hover:bg-teal-700 border-none shadow-sm font-bold uppercase py-2 h-auto mt-2 w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title={os.status === 'FINISHED' && !os.deliveredToExpeditionAt && !isRejectionFlow ? 'Aguardando entrega do técnico na expedição' : ''}
+                                >
                                     <FileText size={12} /> {isRejectionFlow ? 'Emitir NF de Retorno' : 'Emitir NF (Faturar)'}
                                 </button>
+                            )}
+
+                            {os.status === 'FINISHED' && isCommercial && !os.deliveredToExpeditionAt && !isRejectionFlow && (
+                                <div className="mt-2 p-2 rounded-lg border bg-yellow-50 border-yellow-100 text-yellow-800 text-[10px] text-center">
+                                    ⚠️ Aguardando técnico entregar equipamento na expedição
+                                </div>
                             )}
 
 
