@@ -504,13 +504,25 @@ export default function OsGeneralTab({ os, user }) {
 
 
                             {/* Ação Final de Despacho (Auto-habilitado no próximo passo) */}
-                            {os.status === 'INVOICED' && !isRejectionFlow && !isTech && (
+                            {os.status === 'INVOICED' && !isRejectionFlow && isCommercial && (
                                 <div className="mt-3 p-3 rounded-lg border bg-indigo-50 border-indigo-100 text-indigo-800">
                                     <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase">
                                         <CheckCircle size={14} /> Faturamento Concluído
                                     </div>
                                     <div className="text-[10px] text-center mt-1 opacity-75">
                                         Libere a expedição no passo abaixo
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Mensagem para Técnicos após Faturamento */}
+                            {os.status === 'INVOICED' && !isRejectionFlow && isTech && (
+                                <div className="mt-3 p-3 rounded-lg border bg-green-50 border-green-100 text-green-800">
+                                    <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase">
+                                        <CheckCircle size={14} /> NF Emitida - Liberar para Expedição
+                                    </div>
+                                    <div className="text-[10px] text-center mt-1 opacity-75">
+                                        Use os botões abaixo para liberar o equipamento
                                     </div>
                                 </div>
                             )}
@@ -604,7 +616,7 @@ export default function OsGeneralTab({ os, user }) {
                             isLast={true}
                         >
                             {/* 1. Ações de Despacho (Direto de Faturado ou Aguardando) */}
-                            {(os.status === 'INVOICED' || os.status === 'WAITING_COLLECTION' || os.status === 'WAITING_PICKUP') && (isCommercial || isAdmin) && (
+                            {(os.status === 'INVOICED' || os.status === 'WAITING_COLLECTION' || os.status === 'WAITING_PICKUP') && (isCommercial || isAdmin || isTech) && (
                                 <DispatchActions />
                             )}
 
