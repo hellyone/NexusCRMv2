@@ -169,12 +169,19 @@ export async function getEquipmentHistory(serialNumber, clientId) {
     if (!serialNumber) return null;
 
     try {
+        // Primeiro busca sem filtro de cliente para encontrar o equipamento
         const equipment = await prisma.equipment.findFirst({
             where: {
-                serialNumber: serialNumber.toUpperCase(),
-                clientId: clientId ? parseInt(clientId) : undefined
+                serialNumber: serialNumber.toUpperCase()
             },
             include: {
+                client: {
+                    select: {
+                        id: true,
+                        name: true,
+                        document: true
+                    }
+                },
                 serviceOrders: {
                     orderBy: { createdAt: 'desc' },
                     take: 5,

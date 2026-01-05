@@ -433,7 +433,7 @@ export default function OsGeneralTab({ os, user }) {
                                                     disabled={statusLoading || !expeditionChecks.accessoriesPresent || !expeditionChecks.equipmentSealed}
                                                     className="btn btn-xs w-full bg-indigo-600 text-white hover:bg-indigo-700 border-none shadow-sm font-bold uppercase py-2 h-auto text-[10px]"
                                                 >
-                                                    <Package size={12} /> Confirmar Entrega na Expedição
+                                                    <Package size={12} /> Marcar como Concluído
                                                 </button>
                                             )}
                                         </div>
@@ -483,12 +483,58 @@ export default function OsGeneralTab({ os, user }) {
                                 <div className="flex flex-col gap-2 mt-2">
                                     {os.status === 'TESTING' && (isTech || isAdmin) && (
                                         <>
-                                            <button onClick={() => handleStatusChange('FINISHED')} disabled={statusLoading} className="btn btn-xs bg-emerald-600 text-white hover:bg-emerald-700 border-none shadow-sm font-bold uppercase py-2 h-auto">
-                                                <CheckCircle size={12} /> Aprovar (Concluir)
-                                            </button>
-                                            <button onClick={() => handleStatusChange('REWORK')} disabled={statusLoading} className="btn btn-xs bg-red-100 text-red-600 hover:bg-red-200 border-none shadow-sm font-bold uppercase py-2 h-auto">
-                                                <AlertTriangle size={12} /> Reprovar (Retrabalho)
-                                            </button>
+                                            <div className="mt-3 p-3 bg-emerald-50 border border-emerald-100 rounded-lg space-y-3">
+                                                <div className="flex justify-between items-center pb-2 border-b border-emerald-100">
+                                                    <span className="text-[10px] font-black uppercase text-emerald-800">Checklist para Liberação</span>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <label className="flex items-start gap-2 cursor-pointer group">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="checkbox checkbox-xs checkbox-success mt-0.5"
+                                                            checked={expeditionChecks.accessoriesPresent}
+                                                            onChange={(e) => setExpeditionChecks(prev => ({ ...prev, accessoriesPresent: e.target.checked }))}
+                                                        />
+                                                        <span className="text-[11px] text-gray-700 group-hover:text-emerald-600 transition-colors leading-tight">Opcionais/Acessórios conferidos</span>
+                                                    </label>
+                                                    <label className="flex items-start gap-2 cursor-pointer group">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="checkbox checkbox-xs checkbox-success mt-0.5"
+                                                            checked={expeditionChecks.equipmentSealed}
+                                                            onChange={(e) => setExpeditionChecks(prev => ({ ...prev, equipmentSealed: e.target.checked }))}
+                                                        />
+                                                        <span className="text-[11px] text-gray-700 group-hover:text-emerald-600 transition-colors leading-tight">Equipamento fechado e limpo</span>
+                                                    </label>
+                                                    <label className="flex items-start gap-2 cursor-pointer group">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="checkbox checkbox-xs checkbox-success mt-0.5"
+                                                            checked={expeditionChecks.backupVerified}
+                                                            onChange={(e) => setExpeditionChecks(prev => ({ ...prev, backupVerified: e.target.checked }))}
+                                                        />
+                                                        <span className="text-[11px] text-gray-700 group-hover:text-emerald-600 transition-colors leading-tight">Backup verificado</span>
+                                                    </label>
+                                                </div>
+
+                                                <div className="flex gap-2">
+                                                    <button 
+                                                        onClick={() => handleStatusChange('FINISHED')} 
+                                                        disabled={statusLoading || !expeditionChecks.accessoriesPresent || !expeditionChecks.equipmentSealed} 
+                                                        className="btn btn-xs flex-1 bg-emerald-600 text-white hover:bg-emerald-700 border-none shadow-sm font-bold uppercase py-2 h-auto"
+                                                    >
+                                                        <CheckCircle size={12} /> Aprovar (Concluir)
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleStatusChange('REWORK')} 
+                                                        disabled={statusLoading} 
+                                                        className="btn btn-xs flex-1 bg-red-100 text-red-600 hover:bg-red-200 border-none shadow-sm font-bold uppercase py-2 h-auto"
+                                                    >
+                                                        <AlertTriangle size={12} /> Reprovar (Retrabalho)
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </>
                                     )}
                                 </div>

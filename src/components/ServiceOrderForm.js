@@ -30,6 +30,7 @@ export default function ServiceOrderForm() {
     const [activeOS, setActiveOS] = useState(null);
     const [checkingHistory, setCheckingHistory] = useState(false);
     const [historyConflict, setHistoryConflict] = useState(null);
+    const [clientConflict, setClientConflict] = useState(null); // Novo: conflito de cliente
     const [useClientAddress, setUseClientAddress] = useState(true);
     const [fetchingCep, setFetchingCep] = useState(false);
 
@@ -185,6 +186,39 @@ export default function ServiceOrderForm() {
             setWarrantyInfo(warrantyStatus);
             setActiveOS(foundActiveOS);
 
+            // Check for Client conflict - equipamento pode ter sido vendido para outro cliente
+            if (equipment.client && formData.clientId) {
+                const equipmentClientId = String(equipment.client.id);
+                const formClientId = String(formData.clientId);
+                
+                if (equipmentClientId !== formClientId) {
+                    // Cliente diferente - mostrar aviso
+                    setClientConflict({
+                        equipmentClientId: equipment.client.id,
+                        equipmentClientName: equipment.client.name,
+                        formClientId: formData.clientId,
+                        equipmentName: equipment.name,
+                        brand: equipment.brand,
+                        model: equipment.model
+                    });
+                } else {
+                    setClientConflict(null);
+                }
+            } else if (equipment.client && !formData.clientId) {
+                // Equipamento encontrado mas cliente não foi selecionado - sugerir cliente
+                setClientConflict({
+                    equipmentClientId: equipment.client.id,
+                    equipmentClientName: equipment.client.name,
+                    formClientId: null,
+                    equipmentName: equipment.name,
+                    brand: equipment.brand,
+                    model: equipment.model,
+                    suggestClient: true
+                });
+            } else {
+                setClientConflict(null);
+            }
+
             // Check for Part Number conflict
             if (formData.partNumber && equipment.partNumber && formData.partNumber !== equipment.partNumber) {
                 setHistoryConflict({
@@ -212,6 +246,7 @@ export default function ServiceOrderForm() {
         } else {
             setWarrantyInfo(null);
             setHistoryConflict(null);
+            setClientConflict(null);
         }
     };
 
