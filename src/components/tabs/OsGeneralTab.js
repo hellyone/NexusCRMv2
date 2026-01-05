@@ -652,17 +652,23 @@ export default function OsGeneralTab({ os, user }) {
                             {(['FINISHED', 'REJECTED'].includes(os.status)) && isCommercial && (
                                 <button 
                                     onClick={() => handleStatusChange('INVOICED')} 
-                                    disabled={statusLoading || (os.status === 'FINISHED' && !os.deliveredToExpeditionAt && !isRejectionFlow)}
+                                    disabled={statusLoading || (os.status === 'FINISHED' && !os.deliveredToExpeditionAt && !isRejectionFlow && os.type !== 'WARRANTY')}
                                     className="btn btn-xs bg-teal-600 text-white hover:bg-teal-700 border-none shadow-sm font-bold uppercase py-2 h-auto mt-2 w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                                    title={os.status === 'FINISHED' && !os.deliveredToExpeditionAt && !isRejectionFlow ? 'Aguardando entrega do técnico na expedição' : ''}
+                                    title={os.status === 'FINISHED' && !os.deliveredToExpeditionAt && !isRejectionFlow && os.type !== 'WARRANTY' ? 'Aguardando entrega do técnico na expedição' : ''}
                                 >
-                                    <FileText size={12} /> {isRejectionFlow ? 'Emitir NF de Retorno' : 'Emitir NF (Faturar)'}
+                                    <FileText size={12} /> {isRejectionFlow ? 'Emitir NF de Retorno' : os.type === 'WARRANTY' ? 'Emitir NF (Garantia)' : 'Emitir NF (Faturar)'}
                                 </button>
                             )}
 
-                            {os.status === 'FINISHED' && isCommercial && !os.deliveredToExpeditionAt && !isRejectionFlow && (
+                            {os.status === 'FINISHED' && isCommercial && !os.deliveredToExpeditionAt && !isRejectionFlow && os.type !== 'WARRANTY' && (
                                 <div className="mt-2 p-2 rounded-lg border bg-yellow-50 border-yellow-100 text-yellow-800 text-[10px] text-center">
                                     ⚠️ Aguardando técnico entregar equipamento na expedição
+                                </div>
+                            )}
+
+                            {os.status === 'FINISHED' && os.type === 'WARRANTY' && isCommercial && (
+                                <div className="mt-2 p-2 rounded-lg border bg-blue-50 border-blue-100 text-blue-800 text-[10px] text-center">
+                                    ℹ️ OS de Garantia - Pode emitir NF diretamente
                                 </div>
                             )}
 
