@@ -385,8 +385,8 @@ export default function OsGeneralTab({ os, user }) {
                                         </div>
                                     )}
                                     {formData.type === 'WARRANTY' ? (
-                                        <button onClick={() => handleStatusChange('FINISHED')} disabled={statusLoading} className="btn btn-sm w-full bg-green-600 text-white hover:bg-green-700 border-none shadow-sm font-bold uppercase gap-2">
-                                            <CheckCircle size={14} /> Finalizar (Garantia - Sem Custo)
+                                        <button onClick={() => handleStatusChange('IN_PROGRESS')} disabled={statusLoading} className="btn btn-sm w-full bg-green-600 text-white hover:bg-green-700 border-none shadow-sm font-bold uppercase gap-2">
+                                            <CheckCircle size={14} /> Iniciar Reparo (Garantia)
                                         </button>
                                     ) : (
                                         <button onClick={() => handleStatusChange('PRICING')} disabled={statusLoading} className="btn btn-sm w-full bg-yellow-500 text-white hover:bg-yellow-600 border-none shadow-sm font-bold uppercase gap-2">
