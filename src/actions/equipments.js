@@ -226,12 +226,10 @@ export async function getEquipmentHistory(serialNumber, clientId) {
             }
 
             // Verificar possível garantia: se retornou em até 30 dias da última OS
-            // Usa a data de saída (dispatchedAt ou finishedAt) ou abertura (openedAt) da última OS
-            const lastOSDate = lastFinishedOS.dispatchedAt 
-                ? new Date(lastFinishedOS.dispatchedAt)
-                : lastFinishedOS.finishedAt 
-                    ? new Date(lastFinishedOS.finishedAt)
-                    : new Date(lastFinishedOS.openedAt);
+            // Usa a data de saída (finishedAt) ou abertura (openedAt) da última OS
+            const lastOSDate = lastFinishedOS.finishedAt 
+                ? new Date(lastFinishedOS.finishedAt)
+                : new Date(lastFinishedOS.openedAt);
             
             const daysSinceLastOS = Math.floor((now - lastOSDate) / (1000 * 60 * 60 * 24));
             
