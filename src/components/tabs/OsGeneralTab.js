@@ -35,6 +35,7 @@ export default function OsGeneralTab({ os, user }) {
         accessories: os.accessories || '',
         serviceAddress: os.serviceAddress || '',
         entryInvoiceNumber: os.entryInvoiceNumber || '',
+        type: os.type || 'CORRECTIVE',
     });
     const [loading, setLoading] = useState(false);
     const [statusLoading, setStatusLoading] = useState(false);
@@ -55,6 +56,16 @@ export default function OsGeneralTab({ os, user }) {
         Object.keys(formData).forEach(k => payload.append(k, formData[k]));
 
         // We reuse the update header action
+        await updateServiceOrderHeader(os.id, payload);
+        setLoading(false);
+        router.refresh();
+    };
+
+    const handleSaveType = async () => {
+        // Salva apenas o tipo (garantia) sem precisar salvar tudo
+        setLoading(true);
+        const payload = new FormData();
+        payload.append('type', formData.type);
         await updateServiceOrderHeader(os.id, payload);
         setLoading(false);
         router.refresh();

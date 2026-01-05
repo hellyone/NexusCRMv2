@@ -283,18 +283,19 @@ export async function createServiceOrder(formData) {
 export async function updateServiceOrderHeader(id, formData) {
     const data = Object.fromEntries(formData.entries());
 
-    try {
-        const payload = {
-            requesterName: data.requesterName,
-            requesterPhone: data.requesterPhone,
-            reportedDefect: data.reportedDefect,
-            diagnosis: data.diagnosis,
-            solution: data.solution,
-            internalNotes: data.internalNotes,
-            scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
-            warrantyUntil: data.warrantyUntil ? new Date(data.warrantyUntil) : null,
-            technicianId: data.technicianId ? parseInt(data.technicianId) : null,
-            maintenanceArea: data.maintenanceArea || undefined,
+        try {
+            const payload = {
+                requesterName: data.requesterName,
+                requesterPhone: data.requesterPhone,
+                reportedDefect: data.reportedDefect,
+                diagnosis: data.diagnosis,
+                solution: data.solution,
+                internalNotes: data.internalNotes,
+                scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
+                warrantyUntil: data.warrantyUntil ? new Date(data.warrantyUntil) : null,
+                technicianId: data.technicianId ? parseInt(data.technicianId) : null,
+                maintenanceArea: data.maintenanceArea || undefined,
+                type: data.type || undefined, // Permite atualizar o tipo (WARRANTY, CORRECTIVE, etc)
             // Financial fields
             laborHours: data.laborHours ? parseFloat(data.laborHours) : null,
             laborCost: data.laborCost ? parseFloat(data.laborCost) : null,

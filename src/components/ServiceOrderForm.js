@@ -642,6 +642,30 @@ export default function ServiceOrderForm() {
                                                 </div>
                                             )}
 
+                                            {warrantyInfo?.possibleWarranty && !warrantyInfo?.inWarranty && !activeOS && (
+                                                <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded shadow-sm animate-in slide-in-from-top-2">
+                                                    <div className="flex items-start gap-3">
+                                                        <Info className="text-orange-600 mt-0.5" size={20} />
+                                                        <div className="flex-1">
+                                                            <h4 className="text-sm font-black text-orange-800 uppercase leading-none mb-1">Possível Garantia Detectada</h4>
+                                                            <p className="text-xs text-orange-700 font-medium">
+                                                                Este equipamento retornou <b>{warrantyInfo.daysSinceLastOS} dias</b> após a última OS (#{warrantyInfo.lastOS.code}).
+                                                                <br />O técnico deve analisar e confirmar se é caso de garantia durante a análise.
+                                                            </p>
+                                                            <div className="mt-2 flex items-center gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => window.open(`/service-orders/${warrantyInfo.lastOS.id}`, '_blank')}
+                                                                    className="text-[10px] bg-orange-600 text-white px-2 py-1 rounded font-bold uppercase hover:bg-orange-700 transition-colors flex items-center gap-1"
+                                                                >
+                                                                    <History size={12} /> Ver OS Anterior
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             {clientConflict && (
                                                 <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded shadow-sm animate-in slide-in-from-top-2">
                                                     <div className="flex items-start gap-3">

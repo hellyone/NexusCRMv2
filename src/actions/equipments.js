@@ -207,16 +207,38 @@ export async function getEquipmentHistory(serialNumber, clientId) {
         let warrantyStatus = {
             inWarranty: false,
             remainingDays: 0,
-            lastOS: lastFinishedOS || null
+            lastOS: lastFinishedOS || null,
+            possibleWarranty: false,
+            daysSinceLastOS: null
         };
 
-        if (lastFinishedOS && lastFinishedOS.warrantyUntil) {
+        if (lastFinishedOS) {
             const now = new Date();
-            const warrantyDate = new Date(lastFinishedOS.warrantyUntil);
-            if (warrantyDate > now) {
-                warrantyStatus.inWarranty = true;
-                const diffTime = Math.abs(warrantyDate - now);
-                warrantyStatus.remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            // Verificar se está dentro da garantia (warrantyUntil)
+            if (lastFinishedOS.warrantyUntil) {
+                const warrantyDate = new Date(lastFinishedOS.warrantyUntil);
+                if (warrantyDate > now) {
+                    warrantyStatus.inWarranty = true;
+                    const diffTime = Math.abs(warrantyDate - now);
+                    warrantyStatus.remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                }
+            }
+
+            // Verificar possível garantia: se retornou em até 30 dias da última OS
+            // Usa a data de saída (dispatchedAt ou finishedAt) ou abertura (openedAt) da última OS
+            const lastOSDate = lastFinishedOS.dispatchedAt 
+                ? new Date(lastFinishedOS.dispatchedAt)
+                : lastFinishedOS.finishedAt 
+                    ? new Date(lastFinishedOS.finishedAt)
+                    : new Date(lastFinishedOS.openedAt);
+            
+            const daysSinceLastOS = Math.floor((now - lastOSDate) / (1000 * 60 * 60 * 24));
+            
+            // Se retornou em até 30 dias, pode ser garantia
+            if (daysSinceLastOS >= 0 && daysSinceLastOS <= 30) {
+                warrantyStatus.possibleWarranty = true;
+                warrantyStatus.daysSinceLastOS = daysSinceLastOS;
             }
         }
 
