@@ -217,12 +217,19 @@ export function getPublicStatus(os, userRole = 'GUEST') {
     const isTech = userRole && userRole.startsWith('TECH');
     const roleKey = isTech ? 'TECH' : 'COMMERCIAL';
 
-    // Se for IN_PROGRESS e tipo WARRANTY, mostrar status de garantia
-    if (rawStatus === 'IN_PROGRESS' && os.type === 'WARRANTY') {
-        const warrantyConfig = STATUS_DISPLAY_CONFIG['IN_PROGRESS_WARRANTY']?.[roleKey];
-        if (warrantyConfig) {
-            return warrantyConfig;
-        }
+    // GARANTIA: Técnico sempre vê "Garantia" até chegar na expedição (até INVOICED)
+    if (os.type === 'WARRANTY' && isTech && rawStatus !== 'INVOICED' && rawStatus !== 'WAITING_COLLECTION' && rawStatus !== 'WAITING_PICKUP' && rawStatus !== 'DISPATCHED') {
+        return { label: "Garantia", color: "bg-green-100 text-green-700 font-bold" };
+    }
+
+    // GARANTIA: Comercial vê "Aguardando Liberação" desde análise até expedição
+    if (os.type === 'WARRANTY' && !isTech && rawStatus !== 'INVOICED' && rawStatus !== 'WAITING_COLLECTION' && rawStatus !== 'WAITING_PICKUP' && rawStatus !== 'DISPATCHED') {
+        return { label: "Aguardando Liberação (Garantia)", color: "bg-blue-100 text-blue-700 font-bold" };
+    }
+
+    // REJECTED: Comercial vê "Aguardando Liberação Técnica" para emissão NF retorno
+    if (rawStatus === 'REJECTED' && !isTech) {
+        return { label: "Aguardando Liberação Técnica", color: "bg-orange-100 text-orange-700 font-bold" };
     }
 
     let config = STATUS_DISPLAY_CONFIG[rawStatus]?.[roleKey] || { label: rawStatus, color: "bg-gray-100" };
