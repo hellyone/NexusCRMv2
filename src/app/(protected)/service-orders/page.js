@@ -214,6 +214,7 @@ function OrdersTable({ orders, page, totalPages, query, filters, isArchived }) {
                             <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider w-[100px]">OS</th>
                             <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider min-w-[140px]">Status Técnico</th>
                             <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider min-w-[140px]">Status Comercial</th>
+                            {isArchived && <th className="h-10 px-4 text-center align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider w-[120px]">Resultado</th>}
                             <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider w-[90px]">Prio</th>
                             <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider min-w-[150px]">Cliente</th>
                             <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider min-w-[150px]">Equipamento</th>
