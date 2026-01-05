@@ -13,10 +13,11 @@ services:
       # Next Auth Secret (Generate a new one for production!)
       - AUTH_SECRET=${AUTH_SECRET:-change_me_in_production_to_a_long_random_string}
       - AUTH_TRUST_HOST=true
-      # NEXTAUTH_URL será detectado automaticamente dos headers quando AUTH_TRUST_HOST=true
-      # Se precisar forçar, defina no .env do servidor: NEXTAUTH_URL=http://SEU_IP:3000
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-}
-      - APP_URL=${APP_URL:-}
+      # IMPORTANTE: No servidor, defina NEXTAUTH_URL no .env com o IP ou domínio real
+      # Exemplo: NEXTAUTH_URL=http://192.168.1.100:3000 ou NEXTAUTH_URL=https://seu-dominio.com
+      # Com AUTH_TRUST_HOST=true, o NextAuth também detecta dos headers HTTP, mas é melhor definir explicitamente
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - APP_URL=${APP_URL:-${NEXTAUTH_URL:-http://localhost:3000}}
       - NODE_ENV=${NODE_ENV:-production}
     depends_on:
       db:
