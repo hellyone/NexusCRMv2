@@ -17,7 +17,7 @@ export async function authenticate(prevState, formData) {
 
         const { username, password } = result.data;
 
-        await signIn('credentials', { username, password, redirectTo: process.env.APP_URL || '/' });
+        await signIn('credentials', { username, password, redirectTo: '/' });
     } catch (error) {
         console.log('Action: Caught error', error);
         if (error instanceof AuthError) {
