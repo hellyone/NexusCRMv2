@@ -49,9 +49,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 # Force copy node_modules to ensure native deps like bcryptjs are present
 COPY --from=builder /app/node_modules ./node_modules
 
-# Set the correct permission for prerender cache
+# Set the correct permission for prerender cache and node_modules
 RUN mkdir .next
-RUN chown nextjs:nodejs .next
+RUN chown -R nextjs:nodejs .next node_modules
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
