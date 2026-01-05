@@ -305,7 +305,8 @@ function OrdersTable({ orders, page, totalPages, query, filters, isArchived }) {
                                     </Link>
                                 </td>
                             </tr>
-                        ))}
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>
