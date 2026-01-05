@@ -384,9 +384,15 @@ export default function OsGeneralTab({ os, user }) {
                                             </div>
                                         </div>
                                     )}
-                                    <button onClick={() => handleStatusChange('PRICING')} disabled={statusLoading} className="btn btn-sm w-full bg-yellow-500 text-white hover:bg-yellow-600 border-none shadow-sm font-bold uppercase gap-2">
-                                        <FileText size={14} /> Emitir Laudo Técnico
-                                    </button>
+                                    {formData.type === 'WARRANTY' ? (
+                                        <button onClick={() => handleStatusChange('FINISHED')} disabled={statusLoading} className="btn btn-sm w-full bg-green-600 text-white hover:bg-green-700 border-none shadow-sm font-bold uppercase gap-2">
+                                            <CheckCircle size={14} /> Finalizar (Garantia - Sem Custo)
+                                        </button>
+                                    ) : (
+                                        <button onClick={() => handleStatusChange('PRICING')} disabled={statusLoading} className="btn btn-sm w-full bg-yellow-500 text-white hover:bg-yellow-600 border-none shadow-sm font-bold uppercase gap-2">
+                                            <FileText size={14} /> Emitir Laudo Técnico
+                                        </button>
+                                    )}
                                     <button onClick={() => handleStatusChange('REJECTED')} disabled={statusLoading} className="btn btn-sm w-full bg-red-100 text-red-600 hover:bg-red-200 border-none shadow-sm font-bold uppercase gap-2">
                                         <XCircle size={14} /> Reprovar (Sem Conserto)
                                     </button>

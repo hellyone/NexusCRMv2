@@ -56,6 +56,12 @@ export async function updateServiceOrderStatus(id, newStatus, notes = null, exec
         }
     }
 
+    // Para OS de garantia, permite pular precificação e ir direto para FINISHED
+    if (newStatus === 'FINISHED' && os.status === 'IN_ANALYSIS' && os.type === 'WARRANTY') {
+        // Garantia: pode ir direto de IN_ANALYSIS para FINISHED
+        // Não precisa de validação de diagnóstico/solução para garantia
+    }
+
     const data = { status: newStatus };
     const now = new Date();
     const fromStatus = os.status;

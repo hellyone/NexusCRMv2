@@ -850,11 +850,11 @@ export default function ServiceOrderForm() {
                                             />
                                         </div>
 
-                                        {!activeOS && !warrantyInfo?.inWarranty && warrantyInfo?.lastOS && (
+                                        {!activeOS && !warrantyInfo?.inWarranty && !warrantyInfo?.possibleWarranty && warrantyInfo?.lastOS && (
                                             <div className="col-span-full bg-blue-50/50 border border-blue-100 p-3 rounded flex items-center gap-3 mt-2">
                                                 <CheckCircle2 className="text-blue-500" size={16} />
                                                 <p className="text-[10px] text-blue-700 font-bold uppercase">
-                                                    Equipamento já passou por aqui anteriormente. Garantia expirada há {Math.abs(warrantyInfo.remainingDays)} dias.
+                                                    Equipamento já passou por aqui anteriormente. Garantia expirada há {Math.abs(warrantyInfo.remainingDays || warrantyInfo.daysSinceLastOS || 0)} dias.
                                                 </p>
                                             </div>
                                         )}
