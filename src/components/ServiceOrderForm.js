@@ -628,6 +628,49 @@ export default function ServiceOrderForm() {
                                                 </div>
                                             )}
 
+                                            {clientConflict && (
+                                                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded shadow-sm animate-in slide-in-from-top-2">
+                                                    <div className="flex items-start gap-3">
+                                                        <Info className="text-blue-600 mt-0.5" size={20} />
+                                                        <div className="flex-1">
+                                                            <h4 className="text-sm font-black text-blue-800 uppercase leading-none mb-1">
+                                                                {clientConflict.suggestClient ? 'Equipamento Encontrado' : 'Cliente Diferente do Histórico'}
+                                                            </h4>
+                                                            <p className="text-xs text-blue-700 font-medium">
+                                                                {clientConflict.suggestClient ? (
+                                                                    <>
+                                                                        Este equipamento pertence ao cliente <b>{clientConflict.equipmentClientName}</b> no histórico.
+                                                                        <br />Deseja usar este cliente ou escolher outro?
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        Este equipamento pertence ao cliente <b>{clientConflict.equipmentClientName}</b> no histórico,
+                                                                        mas você selecionou outro cliente.
+                                                                        <br />O equipamento pode ter sido vendido. Confirme se é o mesmo cliente ou escolha outro.
+                                                                    </>
+                                                                )}
+                                                            </p>
+                                                            <div className="mt-3 flex gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={handleAcceptClientFromHistory}
+                                                                    className="text-[10px] bg-blue-600 text-white px-2 py-1 rounded font-bold uppercase hover:bg-blue-700 transition-colors"
+                                                                >
+                                                                    Usar Cliente do Histórico
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={handleKeepCurrentClient}
+                                                                    className="text-[10px] border border-blue-300 text-blue-700 px-2 py-1 rounded font-bold uppercase hover:bg-blue-100 transition-colors"
+                                                                >
+                                                                    {clientConflict.suggestClient ? 'Escolher Outro Cliente' : 'Manter Cliente Selecionado'}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             {historyConflict && (
                                                 <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded shadow-sm animate-in slide-in-from-top-2">
                                                     <div className="flex items-start gap-3">
