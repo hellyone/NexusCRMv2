@@ -227,10 +227,6 @@ export function getPublicStatus(os, userRole = 'GUEST') {
         return { label: "Aguardando Liberação (Garantia)", color: "bg-blue-100 text-blue-700 font-bold" };
     }
 
-    // REJECTED: Comercial vê "Aguardando Liberação Técnica" para emissão NF retorno
-    if (rawStatus === 'REJECTED' && !isTech) {
-        return { label: "Aguardando Liberação Técnica", color: "bg-orange-100 text-orange-700 font-bold" };
-    }
 
     let config = STATUS_DISPLAY_CONFIG[rawStatus]?.[roleKey] || { label: rawStatus, color: "bg-gray-100" };
 
