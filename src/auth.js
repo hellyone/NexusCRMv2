@@ -72,10 +72,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
     ],
     secret: process.env.AUTH_SECRET || (() => {
         if (process.env.NODE_ENV === 'production') {
-            // Na Vercel o build roda em NODE_ENV=production; não lançar aqui para o build passar.
-            // Defina AUTH_SECRET em Vercel → Settings → Environment Variables.
-            console.warn('⚠️ AUTH_SECRET não definido. Em produção, defina em Vercel → Environment Variables.');
-            return 'temp-secret-define-auth-secret-in-vercel';
+            throw new Error('AUTH_SECRET deve ser definido em produção. Verifique seu arquivo .env');
         }
         console.warn('⚠️  AUTH_SECRET não definido. Usando valor temporário para desenvolvimento.');
         return 'dev-secret-temporary-change-in-production';
