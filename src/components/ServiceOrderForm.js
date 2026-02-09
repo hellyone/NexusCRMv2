@@ -30,7 +30,6 @@ export default function ServiceOrderForm() {
     const [activeOS, setActiveOS] = useState(null);
     const [checkingHistory, setCheckingHistory] = useState(false);
     const [historyConflict, setHistoryConflict] = useState(null);
-    const [clientConflict, setClientConflict] = useState(null); // Novo: conflito de cliente
     const [useClientAddress, setUseClientAddress] = useState(true);
     const [fetchingCep, setFetchingCep] = useState(false);
 
@@ -186,39 +185,6 @@ export default function ServiceOrderForm() {
             setWarrantyInfo(warrantyStatus);
             setActiveOS(foundActiveOS);
 
-            // Check for Client conflict - equipamento pode ter sido vendido para outro cliente
-            if (equipment.client && formData.clientId) {
-                const equipmentClientId = String(equipment.client.id);
-                const formClientId = String(formData.clientId);
-                
-                if (equipmentClientId !== formClientId) {
-                    // Cliente diferente - mostrar aviso
-                    setClientConflict({
-                        equipmentClientId: equipment.client.id,
-                        equipmentClientName: equipment.client.name,
-                        formClientId: formData.clientId,
-                        equipmentName: equipment.name,
-                        brand: equipment.brand,
-                        model: equipment.model
-                    });
-                } else {
-                    setClientConflict(null);
-                }
-            } else if (equipment.client && !formData.clientId) {
-                // Equipamento encontrado mas cliente não foi selecionado - sugerir cliente
-                setClientConflict({
-                    equipmentClientId: equipment.client.id,
-                    equipmentClientName: equipment.client.name,
-                    formClientId: null,
-                    equipmentName: equipment.name,
-                    brand: equipment.brand,
-                    model: equipment.model,
-                    suggestClient: true
-                });
-            } else {
-                setClientConflict(null);
-            }
-
             // Check for Part Number conflict
             if (formData.partNumber && equipment.partNumber && formData.partNumber !== equipment.partNumber) {
                 setHistoryConflict({
@@ -246,7 +212,6 @@ export default function ServiceOrderForm() {
         } else {
             setWarrantyInfo(null);
             setHistoryConflict(null);
-            setClientConflict(null);
         }
     };
 
@@ -273,20 +238,6 @@ export default function ServiceOrderForm() {
         } finally {
             setFetchingCep(false);
         }
-    };
-
-    const handleAcceptClientFromHistory = () => {
-        if (clientConflict?.equipmentClientId) {
-            setFormData(prev => ({
-                ...prev,
-                clientId: String(clientConflict.equipmentClientId)
-            }));
-            setClientConflict(null);
-        }
-    };
-
-    const handleKeepCurrentClient = () => {
-        setClientConflict(null);
     };
 
     const handleAcceptHistoricalPN = () => {
@@ -642,73 +593,6 @@ export default function ServiceOrderForm() {
                                                 </div>
                                             )}
 
-                                            {warrantyInfo?.possibleWarranty && !warrantyInfo?.inWarranty && !activeOS && (
-                                                <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded shadow-sm animate-in slide-in-from-top-2">
-                                                    <div className="flex items-start gap-3">
-                                                        <Info className="text-orange-600 mt-0.5" size={20} />
-                                                        <div className="flex-1">
-                                                            <h4 className="text-sm font-black text-orange-800 uppercase leading-none mb-1">Possível Garantia Detectada</h4>
-                                                            <p className="text-xs text-orange-700 font-medium">
-                                                                Este equipamento retornou <b>{warrantyInfo.daysSinceLastOS} dias</b> após a última OS (#{warrantyInfo.lastOS.code}).
-                                                                <br />O técnico deve analisar e confirmar se é caso de garantia durante a análise.
-                                                            </p>
-                                                            <div className="mt-2 flex items-center gap-2">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => window.open(`/service-orders/${warrantyInfo.lastOS.id}`, '_blank')}
-                                                                    className="text-[10px] bg-orange-600 text-white px-2 py-1 rounded font-bold uppercase hover:bg-orange-700 transition-colors flex items-center gap-1"
-                                                                >
-                                                                    <History size={12} /> Ver OS Anterior
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {clientConflict && (
-                                                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded shadow-sm animate-in slide-in-from-top-2">
-                                                    <div className="flex items-start gap-3">
-                                                        <Info className="text-blue-600 mt-0.5" size={20} />
-                                                        <div className="flex-1">
-                                                            <h4 className="text-sm font-black text-blue-800 uppercase leading-none mb-1">
-                                                                {clientConflict.suggestClient ? 'Equipamento Encontrado' : 'Cliente Diferente do Histórico'}
-                                                            </h4>
-                                                            <p className="text-xs text-blue-700 font-medium">
-                                                                {clientConflict.suggestClient ? (
-                                                                    <>
-                                                                        Este equipamento pertence ao cliente <b>{clientConflict.equipmentClientName}</b> no histórico.
-                                                                        <br />Deseja usar este cliente ou escolher outro?
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        Este equipamento pertence ao cliente <b>{clientConflict.equipmentClientName}</b> no histórico,
-                                                                        mas você selecionou outro cliente.
-                                                                        <br />O equipamento pode ter sido vendido. Confirme se é o mesmo cliente ou escolha outro.
-                                                                    </>
-                                                                )}
-                                                            </p>
-                                                            <div className="mt-3 flex gap-2">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={handleAcceptClientFromHistory}
-                                                                    className="text-[10px] bg-blue-600 text-white px-2 py-1 rounded font-bold uppercase hover:bg-blue-700 transition-colors"
-                                                                >
-                                                                    Usar Cliente do Histórico
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={handleKeepCurrentClient}
-                                                                    className="text-[10px] border border-blue-300 text-blue-700 px-2 py-1 rounded font-bold uppercase hover:bg-blue-100 transition-colors"
-                                                                >
-                                                                    {clientConflict.suggestClient ? 'Escolher Outro Cliente' : 'Manter Cliente Selecionado'}
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
                                             {historyConflict && (
                                                 <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded shadow-sm animate-in slide-in-from-top-2">
                                                     <div className="flex items-start gap-3">
@@ -850,11 +734,11 @@ export default function ServiceOrderForm() {
                                             />
                                         </div>
 
-                                        {!activeOS && !warrantyInfo?.inWarranty && !warrantyInfo?.possibleWarranty && warrantyInfo?.lastOS && (
+                                        {!activeOS && !warrantyInfo?.inWarranty && warrantyInfo?.lastOS && (
                                             <div className="col-span-full bg-blue-50/50 border border-blue-100 p-3 rounded flex items-center gap-3 mt-2">
                                                 <CheckCircle2 className="text-blue-500" size={16} />
                                                 <p className="text-[10px] text-blue-700 font-bold uppercase">
-                                                    Equipamento já passou por aqui anteriormente. Garantia expirada há {Math.abs(warrantyInfo.remainingDays || warrantyInfo.daysSinceLastOS || 0)} dias.
+                                                    Equipamento já passou por aqui anteriormente. Garantia expirada há {Math.abs(warrantyInfo.remainingDays)} dias.
                                                 </p>
                                             </div>
                                         )}

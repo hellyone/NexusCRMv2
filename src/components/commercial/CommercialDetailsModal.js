@@ -9,18 +9,13 @@ import { maskCurrency } from '@/utils/masks';
 
 export default function CommercialDetailsModal({ os, onClose }) {
     const [entryInvoice, setEntryInvoice] = useState(os.entryInvoiceNumber || '');
-    const [serviceInvoice, setServiceInvoice] = useState(os.serviceInvoiceNumber || '');
     const [exitInvoice, setExitInvoice] = useState(os.exitInvoiceNumber || '');
     const [saving, setSaving] = useState(false);
-    
-    // Verifica se é fluxo de reprovação (somente NF de retorno)
-    const isRejectionFlow = os.statusHistory?.some(h => h.status === 'REJECTED' || h.toStatus === 'REJECTED' || h.fromStatus === 'REJECTED');
 
     const handleSave = async () => {
         setSaving(true);
         await updateCommercialDetails(os.id, {
             entryInvoiceNumber: entryInvoice,
-            serviceInvoiceNumber: serviceInvoice,
             exitInvoiceNumber: exitInvoice
         });
         setSaving(false);
@@ -48,40 +43,26 @@ export default function CommercialDetailsModal({ os, onClose }) {
                         <h3 className="text-sm font-bold uppercase text-gray-400 mb-3 flex items-center gap-2">
                             <FileText size={16} /> Dados Fiscais
                         </h3>
-                        <div className="grid grid-cols-1 gap-4">
+                        <div className="grid grid-cols-2 gap-4">
                             <div className="form-control">
                                 <label className="label-text text-xs font-bold mb-1">NF Entrada / Remessa</label>
                                 <input
                                     type="text"
                                     className="input input-sm input-bordered w-full"
-                                    placeholder="Número da NF de entrada..."
+                                    placeholder="Número da NF..."
                                     value={entryInvoice}
                                     onChange={(e) => setEntryInvoice(e.target.value)}
                                 />
                             </div>
-                            {!isRejectionFlow && (
-                                <div className="form-control">
-                                    <label className="label-text text-xs font-bold mb-1 text-green-600">NF de Serviço</label>
-                                    <input
-                                        type="text"
-                                        className="input input-sm input-bordered w-full border-green-200 bg-green-50 focus:border-green-500"
-                                        placeholder="Número da NF de serviço (quando aprovado)..."
-                                        value={serviceInvoice}
-                                        onChange={(e) => setServiceInvoice(e.target.value)}
-                                    />
-                                    <p className="text-[10px] text-gray-500 mt-1">Apenas para OS aprovadas com reparo</p>
-                                </div>
-                            )}
                             <div className="form-control">
-                                <label className="label-text text-xs font-bold mb-1 text-blue-600">NF de Retorno / Saída</label>
+                                <label className="label-text text-xs font-bold mb-1 text-blue-600">NF Saída / Retorno</label>
                                 <input
                                     type="text"
                                     className="input input-sm input-bordered w-full border-blue-200 bg-blue-50 focus:border-blue-500"
-                                    placeholder="Número da NF de retorno..."
+                                    placeholder="Gerar NF..."
                                     value={exitInvoice}
                                     onChange={(e) => setExitInvoice(e.target.value)}
                                 />
-                                <p className="text-[10px] text-gray-500 mt-1">Sempre emitida ao devolver o equipamento</p>
                             </div>
                         </div>
                         <div className="mt-3 flex justify-end">

@@ -14,9 +14,15 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
 
                 if (!username || !password) return null;
 
-                const user = await prisma.user.findUnique({
-                    where: { username },
-                });
+                let user;
+                try {
+                    user = await prisma.user.findUnique({
+                        where: { username },
+                    });
+                } catch (e) {
+                    console.error('Erro ao buscar usuário no login:', e);
+                    throw new Error('Erro ao buscar usuário. Verifique a conexão com o banco de dados.');
+                }
 
                 if (!user) return null;
 

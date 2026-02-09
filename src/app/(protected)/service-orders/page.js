@@ -5,7 +5,6 @@ import { getServiceOrders } from '@/actions/service-orders';
 import { SERVICE_ORDER_STATUS, PRIORITY_OPTIONS, getPublicStatus } from '@/utils/status-machine';
 import { auth } from '@/auth';
 import AdvancedFilters from '@/components/service-orders/AdvancedFilters';
-import { getServiceOrderSummary } from '@/utils/service-order-summary';
 
 export default async function ServiceOrdersPage({ searchParams }) {
     const params = await searchParams;
@@ -214,7 +213,6 @@ function OrdersTable({ orders, page, totalPages, query, filters, isArchived }) {
                             <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider w-[100px]">OS</th>
                             <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider min-w-[140px]">Status Técnico</th>
                             <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider min-w-[140px]">Status Comercial</th>
-                            {isArchived && <th className="h-10 px-4 text-center align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider w-[120px]">Resultado</th>}
                             <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider w-[90px]">Prio</th>
                             <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider min-w-[150px]">Cliente</th>
                             <th className="h-10 px-4 text-left align-middle font-semibold text-muted-foreground uppercase text-[10px] tracking-wider min-w-[150px]">Equipamento</th>
@@ -226,32 +224,23 @@ function OrdersTable({ orders, page, totalPages, query, filters, isArchived }) {
                         </tr>
                     </thead>
                     <tbody className="[&_tr:last-child]:border-0 font-medium bg-white">
-                        {orders.map((os) => {
-                            const summary = isArchived ? getServiceOrderSummary(os) : null;
-                            return (
-                                <tr key={os.id} className="border-b hover:bg-slate-50 transition-colors">
-                                    <td className="p-3 align-middle">
-                                        <span className="font-mono font-bold text-gray-900 whitespace-nowrap">{os.code}</span>
-                                    </td>
-                                    <td className="p-3 align-middle">
-                                        <StatusBadge os={os} role="TECH" />
-                                    </td>
-                                    <td className="p-3 align-middle">
-                                        <StatusBadge os={os} role="BACKOFFICE" />
-                                    </td>
-                                    {isArchived && (
-                                        <td className="p-3 align-middle text-center">
-                                            <span className={`text-[10px] px-2 py-0.5 rounded border whitespace-nowrap font-bold uppercase tracking-tight inline-block ${summary?.bgColor || 'bg-gray-50 border-gray-200'} ${summary?.color || 'text-gray-500'}`}>
-                                                {summary?.label || 'Indefinido'}
-                                            </span>
-                                        </td>
-                                    )}
-                                    <td className="p-3 align-middle">
-                                        <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded border ${getPriorityColor(os.priority)} `}>
-                                            <AlertCircle size={10} />
-                                            {formatPriority(os.priority)}
-                                        </span>
-                                    </td>
+                        {orders.map((os) => (
+                            <tr key={os.id} className="border-b hover:bg-slate-50 transition-colors">
+                                <td className="p-3 align-middle">
+                                    <span className="font-mono font-bold text-gray-900 whitespace-nowrap">{os.code}</span>
+                                </td>
+                                <td className="p-3 align-middle">
+                                    <StatusBadge os={os} role="TECH" />
+                                </td>
+                                <td className="p-3 align-middle">
+                                    <StatusBadge os={os} role="BACKOFFICE" />
+                                </td>
+                                <td className="p-3 align-middle">
+                                    <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded border ${getPriorityColor(os.priority)} `}>
+                                        <AlertCircle size={10} />
+                                        {formatPriority(os.priority)}
+                                    </span>
+                                </td>
                                 <td className="p-3 align-middle">
                                     <span className="text-gray-900 line-clamp-1 max-w-[150px]" title={os.client.name}>
                                         {os.client.name}
@@ -305,8 +294,7 @@ function OrdersTable({ orders, page, totalPages, query, filters, isArchived }) {
                                     </Link>
                                 </td>
                             </tr>
-                            );
-                        })}
+                        ))}
                     </tbody>
                 </table>
             </div>

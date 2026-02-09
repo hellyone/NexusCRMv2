@@ -24,7 +24,7 @@ export const SERVICE_ORDER_STATUS = {
 
 export const ALLOWED_TRANSITIONS = {
     OPEN: ["IN_ANALYSIS", "CANCELED"],
-    IN_ANALYSIS: ["PRICING", "REJECTED", "FINISHED", "IN_PROGRESS", "CANCELED"], // IN_PROGRESS para garantia, FINISHED para garantia direto
+    IN_ANALYSIS: ["PRICING", "REJECTED", "CANCELED"],
     PRICING: ["WAITING_APPROVAL", "CANCELED"],
     WAITING_APPROVAL: ["APPROVED", "REJECTED", "NEGOTIATING", "ABANDONED", "CANCELED"], // Abandonar após 90d
     NEGOTIATING: ["APPROVED", "REJECTED", "CANCELED"],
@@ -149,11 +149,6 @@ const STATUS_DISPLAY_CONFIG = {
         TECH: { label: "Em Reparo", color: "bg-blue-100 text-blue-700" },
         COMMERCIAL: { label: "Em Execução", color: "bg-blue-50 text-blue-600" }
     },
-    // Garantia em IN_PROGRESS (mostra "Garantia" para técnico)
-    IN_PROGRESS_WARRANTY: {
-        TECH: { label: "Garantia", color: "bg-green-100 text-green-700 font-bold" },
-        COMMERCIAL: { label: "Em Execução (Garantia)", color: "bg-green-50 text-green-600" }
-    },
     // 5.2
     WAITING_PARTS: {
         TECH: { label: "Aguardando Peça", color: "bg-orange-50 text-orange-700" },
@@ -216,17 +211,6 @@ export function getPublicStatus(os, userRole = 'GUEST') {
     const rawStatus = os.status;
     const isTech = userRole && userRole.startsWith('TECH');
     const roleKey = isTech ? 'TECH' : 'COMMERCIAL';
-
-    // GARANTIA: Técnico sempre vê "Garantia" até chegar na expedição (até INVOICED)
-    if (os.type === 'WARRANTY' && isTech && rawStatus !== 'INVOICED' && rawStatus !== 'WAITING_COLLECTION' && rawStatus !== 'WAITING_PICKUP' && rawStatus !== 'DISPATCHED') {
-        return { label: "Garantia", color: "bg-green-100 text-green-700 font-bold" };
-    }
-
-    // GARANTIA: Comercial vê "Aguardando Liberação" desde análise até expedição
-    if (os.type === 'WARRANTY' && !isTech && rawStatus !== 'INVOICED' && rawStatus !== 'WAITING_COLLECTION' && rawStatus !== 'WAITING_PICKUP' && rawStatus !== 'DISPATCHED') {
-        return { label: "Aguardando Liberação (Garantia)", color: "bg-blue-100 text-blue-700 font-bold" };
-    }
-
 
     let config = STATUS_DISPLAY_CONFIG[rawStatus]?.[roleKey] || { label: rawStatus, color: "bg-gray-100" };
 

@@ -49,9 +49,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 # Force copy node_modules to ensure native deps like bcryptjs are present
 COPY --from=builder /app/node_modules ./node_modules
 
-# Set the correct permission for prerender cache and node_modules
+# Set the correct permission for prerender cache
 RUN mkdir .next
-RUN chown -R nextjs:nodejs .next node_modules
+RUN chown nextjs:nodejs .next
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
@@ -65,15 +65,5 @@ EXPOSE 3000
 ENV PORT 3000
 # set hostname to localhost
 ENV HOSTNAME "0.0.0.0"
-
-# Labels para Portainer e organização
-LABEL com.portainer.accesscontrol="true"
-LABEL com.docker.compose.service="nexus-os"
-LABEL org.opencontainers.image.title="Nexus OS"
-LABEL org.opencontainers.image.description="Sistema Integrado de Gestão para Assistência Técnica"
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 CMD ["node", "server.js"]

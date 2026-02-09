@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 
 // Rotas públicas que não requerem autenticação
-const publicRoutes = ['/login', '/api/auth', '/api/health'];
+const publicRoutes = ['/login', '/api/auth'];
 
 // Rotas protegidas com requisitos de role específicos
 const roleBasedRoutes = {
@@ -50,27 +50,7 @@ export default auth((req) => {
         }
     }
 
-    // Adicionar headers de segurança
-    const response = NextResponse.next();
-    
-    // Security headers
-    response.headers.set('X-Content-Type-Options', 'nosniff');
-    response.headers.set('X-Frame-Options', 'DENY');
-    response.headers.set('X-XSS-Protection', '1; mode=block');
-    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-    
-    // Permissions Policy (antiga Feature-Policy)
-    response.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
-    
-    // CSP básico (ajuste conforme necessário)
-    if (process.env.NODE_ENV === 'production') {
-        response.headers.set(
-            'Content-Security-Policy',
-            "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;"
-        );
-    }
-
-    return response;
+    return NextResponse.next();
 });
 
 export const config = {

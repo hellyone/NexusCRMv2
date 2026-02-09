@@ -1,6 +1,5 @@
 /**
  * Sistema de logging centralizado
- * Suporta logs estruturados (JSON) para containers e produção
  */
 
 const LOG_LEVELS = {
@@ -14,34 +13,15 @@ const currentLogLevel = process.env.NODE_ENV === 'production'
     ? LOG_LEVELS.INFO 
     : LOG_LEVELS.DEBUG;
 
-// Configuração: usar JSON estruturado em produção/containers
-const USE_JSON_LOGS = process.env.JSON_LOGS === 'true' || process.env.NODE_ENV === 'production';
-
 /**
  * Formata mensagem de log com timestamp e contexto
- * @param {string} level - Nível do log (ERROR, WARN, INFO, DEBUG)
- * @param {string} message - Mensagem do log
- * @param {object} context - Contexto adicional
- * @returns {string|object} Log formatado (string em dev, objeto em prod)
  */
 function formatLog(level, message, context = {}) {
     const timestamp = new Date().toISOString();
-    
-    if (USE_JSON_LOGS) {
-        // JSON estruturado para containers/produção
-        return JSON.stringify({
-            timestamp,
-            level,
-            message,
-            ...context,
-        });
-    } else {
-        // Formato legível para desenvolvimento
-        const contextStr = Object.keys(context).length > 0 
-            ? ` ${JSON.stringify(context)}` 
-            : '';
-        return `[${timestamp}] [${level}] ${message}${contextStr}`;
-    }
+    const contextStr = Object.keys(context).length > 0 
+        ? ` ${JSON.stringify(context)}` 
+        : '';
+    return `[${timestamp}] [${level}] ${message}${contextStr}`;
 }
 
 /**

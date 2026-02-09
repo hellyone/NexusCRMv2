@@ -101,20 +101,6 @@ Sistema de gestão de ordens de serviço para assistência técnica de equipamen
    - ✅ Removido técnicos dos botões de escolha de método
    - ✅ Apenas comercial/admin podem escolher (transportadora, balcão, entrega própria)
 
-2. **Diferenciação NF de Serviço vs NF de Retorno**
-   - ✅ Adicionado campo `serviceInvoiceNumber` no schema Prisma
-   - ✅ Atualizado modal de faturamento com campos separados:
-     - NF de Entrada (entryInvoiceNumber)
-     - NF de Serviço (serviceInvoiceNumber) - apenas para OS aprovadas
-     - NF de Retorno (exitInvoiceNumber) - sempre emitida
-   - ✅ Modal diferencia visualmente entre fluxo de aprovação vs reprovação
-
-3. **Registro de Entrega na Expedição**
-   - ✅ Adicionado campo `deliveredToExpeditionAt` no schema Prisma
-   - ✅ Criada ação `markDeliveredToExpedition` para técnicos
-   - ✅ Adicionado botão "Confirmar Entrega na Expedição" para técnicos
-   - ✅ Comercial só pode faturar após técnico entregar na expedição (para fluxo de aprovação)
-
 ### ⚠️ PROBLEMAS A CORRIGIR
 
 #### 1. **Diferenciação NF de Serviço vs NF de Retorno**

@@ -31,6 +31,10 @@ export async function authenticate(prevState, formData) {
                     return 'Algo deu errado no login.';
             }
         }
+        // Mensagem amigável para erros do authorize (ex.: "Erro ao buscar usuário", "Conta desativada")
+        if (error?.message && typeof error.message === 'string') {
+            return error.message;
+        }
         // Redirect errors must be re-thrown
         throw error;
     }

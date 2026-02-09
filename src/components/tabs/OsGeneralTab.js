@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { updateServiceOrderHeader, updateServiceOrderStatus, markDeliveredToExpedition } from '@/actions/service-orders'; // We need status action export
+import { updateServiceOrderHeader, updateServiceOrderStatus } from '@/actions/service-orders'; // We need status action export
 // Oops, logic for status update is in 'service-order-items.js' or 'service-orders.js'? 
 // I put `updateServiceOrderStatus` in `actions/service-order-items.js` previously. 
 // I should move/import correctly.
@@ -35,11 +35,9 @@ export default function OsGeneralTab({ os, user }) {
         accessories: os.accessories || '',
         serviceAddress: os.serviceAddress || '',
         entryInvoiceNumber: os.entryInvoiceNumber || '',
-        type: os.type || 'CORRECTIVE',
     });
     const [loading, setLoading] = useState(false);
     const [statusLoading, setStatusLoading] = useState(false);
-    const [deliveryLoading, setDeliveryLoading] = useState(false);
     const [expeditionChecks, setExpeditionChecks] = useState({
         accessoriesPresent: false,
         equipmentSealed: false,
@@ -59,28 +57,6 @@ export default function OsGeneralTab({ os, user }) {
         await updateServiceOrderHeader(os.id, payload);
         setLoading(false);
         router.refresh();
-    };
-
-    const handleSaveType = async () => {
-        // Salva apenas o tipo (garantia) sem precisar salvar tudo
-        setLoading(true);
-        const payload = new FormData();
-        payload.append('type', formData.type);
-        await updateServiceOrderHeader(os.id, payload);
-        setLoading(false);
-        router.refresh();
-    };
-
-    const handleMarkDelivered = async () => {
-        if (!confirm('Confirmar que o equipamento e laudo técnico foram entregues na expedição?')) return;
-        setDeliveryLoading(true);
-        const res = await markDeliveredToExpedition(os.id);
-        if (res.error) {
-            alert(res.error);
-        } else {
-            router.refresh();
-        }
-        setDeliveryLoading(false);
     };
 
     const { registerAction, unregisterAction } = useServiceOrderActions();
@@ -328,71 +304,9 @@ export default function OsGeneralTab({ os, user }) {
                             )}
                             {os.status === 'IN_ANALYSIS' && isTech && (
                                 <div className="flex flex-col gap-2 mt-2">
-                                    {/* Opção para marcar como garantia */}
-                                    {formData.type !== 'WARRANTY' && (
-                                        <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg mb-2">
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    className="checkbox checkbox-sm checkbox-primary"
-                                                    checked={formData.type === 'WARRANTY'}
-                                                    onChange={(e) => {
-                                                        const newType = e.target.checked ? 'WARRANTY' : 'CORRECTIVE';
-                                                        setFormData(prev => ({
-                                                            ...prev,
-                                                            type: newType
-                                                        }));
-                                                        // Salva automaticamente quando marca/desmarca
-                                                        setTimeout(() => {
-                                                            const payload = new FormData();
-                                                            payload.append('type', newType);
-                                                            updateServiceOrderHeader(os.id, payload).then(() => {
-                                                                router.refresh();
-                                                            });
-                                                        }, 100);
-                                                    }}
-                                                />
-                                                <span className="text-xs font-bold text-blue-800 uppercase">
-                                                    Marcar como Garantia
-                                                </span>
-                                            </label>
-                                            <p className="text-[10px] text-blue-600 mt-1 ml-6">
-                                                Equipamento retornou em até 30 dias da última OS
-                                            </p>
-                                        </div>
-                                    )}
-                                    {formData.type === 'WARRANTY' && (
-                                        <div className="p-2 bg-blue-100 border border-blue-300 rounded-lg mb-2">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs font-bold text-blue-900 uppercase flex items-center gap-1">
-                                                    <CheckCircle size={12} /> OS Marcada como Garantia
-                                                </span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setFormData(prev => ({ ...prev, type: 'CORRECTIVE' }));
-                                                        const payload = new FormData();
-                                                        payload.append('type', 'CORRECTIVE');
-                                                        updateServiceOrderHeader(os.id, payload).then(() => {
-                                                            router.refresh();
-                                                        });
-                                                    }}
-                                                    className="text-[10px] text-blue-700 hover:text-blue-900 font-bold"
-                                                >
-                                                    Remover
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {formData.type === 'WARRANTY' ? (
-                                        <button onClick={() => handleStatusChange('IN_PROGRESS')} disabled={statusLoading} className="btn btn-sm w-full bg-green-600 text-white hover:bg-green-700 border-none shadow-sm font-bold uppercase gap-2">
-                                            <CheckCircle size={14} /> Iniciar Reparo (Garantia)
-                                        </button>
-                                    ) : (
-                                        <button onClick={() => handleStatusChange('PRICING')} disabled={statusLoading} className="btn btn-sm w-full bg-yellow-500 text-white hover:bg-yellow-600 border-none shadow-sm font-bold uppercase gap-2">
-                                            <FileText size={14} /> Emitir Laudo Técnico
-                                        </button>
-                                    )}
+                                    <button onClick={() => handleStatusChange('PRICING')} disabled={statusLoading} className="btn btn-sm w-full bg-yellow-500 text-white hover:bg-yellow-600 border-none shadow-sm font-bold uppercase gap-2">
+                                        <FileText size={14} /> Emitir Laudo Técnico
+                                    </button>
                                     <button onClick={() => handleStatusChange('REJECTED')} disabled={statusLoading} className="btn btn-sm w-full bg-red-100 text-red-600 hover:bg-red-200 border-none shadow-sm font-bold uppercase gap-2">
                                         <XCircle size={14} /> Reprovar (Sem Conserto)
                                     </button>
@@ -506,7 +420,7 @@ export default function OsGeneralTab({ os, user }) {
                                                     disabled={statusLoading || !expeditionChecks.accessoriesPresent || !expeditionChecks.equipmentSealed}
                                                     className="btn btn-xs w-full bg-indigo-600 text-white hover:bg-indigo-700 border-none shadow-sm font-bold uppercase py-2 h-auto text-[10px]"
                                                 >
-                                                    <Package size={12} /> Marcar como Concluído
+                                                    <Package size={12} /> Confirmar Entrega na Expedição
                                                 </button>
                                             )}
                                         </div>
@@ -556,58 +470,12 @@ export default function OsGeneralTab({ os, user }) {
                                 <div className="flex flex-col gap-2 mt-2">
                                     {os.status === 'TESTING' && (isTech || isAdmin) && (
                                         <>
-                                            <div className="mt-3 p-3 bg-emerald-50 border border-emerald-100 rounded-lg space-y-3">
-                                                <div className="flex justify-between items-center pb-2 border-b border-emerald-100">
-                                                    <span className="text-[10px] font-black uppercase text-emerald-800">Checklist para Liberação</span>
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <label className="flex items-start gap-2 cursor-pointer group">
-                                                        <input
-                                                            type="checkbox"
-                                                            className="checkbox checkbox-xs checkbox-success mt-0.5"
-                                                            checked={expeditionChecks.accessoriesPresent}
-                                                            onChange={(e) => setExpeditionChecks(prev => ({ ...prev, accessoriesPresent: e.target.checked }))}
-                                                        />
-                                                        <span className="text-[11px] text-gray-700 group-hover:text-emerald-600 transition-colors leading-tight">Opcionais/Acessórios conferidos</span>
-                                                    </label>
-                                                    <label className="flex items-start gap-2 cursor-pointer group">
-                                                        <input
-                                                            type="checkbox"
-                                                            className="checkbox checkbox-xs checkbox-success mt-0.5"
-                                                            checked={expeditionChecks.equipmentSealed}
-                                                            onChange={(e) => setExpeditionChecks(prev => ({ ...prev, equipmentSealed: e.target.checked }))}
-                                                        />
-                                                        <span className="text-[11px] text-gray-700 group-hover:text-emerald-600 transition-colors leading-tight">Equipamento fechado e limpo</span>
-                                                    </label>
-                                                    <label className="flex items-start gap-2 cursor-pointer group">
-                                                        <input
-                                                            type="checkbox"
-                                                            className="checkbox checkbox-xs checkbox-success mt-0.5"
-                                                            checked={expeditionChecks.backupVerified}
-                                                            onChange={(e) => setExpeditionChecks(prev => ({ ...prev, backupVerified: e.target.checked }))}
-                                                        />
-                                                        <span className="text-[11px] text-gray-700 group-hover:text-emerald-600 transition-colors leading-tight">Backup verificado</span>
-                                                    </label>
-                                                </div>
-
-                                                <div className="flex gap-2">
-                                                    <button 
-                                                        onClick={() => handleStatusChange('FINISHED')} 
-                                                        disabled={statusLoading || !expeditionChecks.accessoriesPresent || !expeditionChecks.equipmentSealed} 
-                                                        className="btn btn-xs flex-1 bg-emerald-600 text-white hover:bg-emerald-700 border-none shadow-sm font-bold uppercase py-2 h-auto"
-                                                    >
-                                                        <CheckCircle size={12} /> Aprovar (Concluir)
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => handleStatusChange('REWORK')} 
-                                                        disabled={statusLoading} 
-                                                        className="btn btn-xs flex-1 bg-red-100 text-red-600 hover:bg-red-200 border-none shadow-sm font-bold uppercase py-2 h-auto"
-                                                    >
-                                                        <AlertTriangle size={12} /> Reprovar (Retrabalho)
-                                                    </button>
-                                                </div>
-                                            </div>
+                                            <button onClick={() => handleStatusChange('FINISHED')} disabled={statusLoading} className="btn btn-xs bg-emerald-600 text-white hover:bg-emerald-700 border-none shadow-sm font-bold uppercase py-2 h-auto">
+                                                <CheckCircle size={12} /> Aprovar (Concluir)
+                                            </button>
+                                            <button onClick={() => handleStatusChange('REWORK')} disabled={statusLoading} className="btn btn-xs bg-red-100 text-red-600 hover:bg-red-200 border-none shadow-sm font-bold uppercase py-2 h-auto">
+                                                <AlertTriangle size={12} /> Reprovar (Retrabalho)
+                                            </button>
                                         </>
                                     )}
                                 </div>
@@ -626,80 +494,23 @@ export default function OsGeneralTab({ os, user }) {
                             isDone={['INVOICED', 'WAITING_COLLECTION', 'WAITING_PICKUP', 'DISPATCHED', 'WARRANTY_RETURN'].includes(os.status)}
                             isActive={os.status === 'FINISHED' || os.status === 'REJECTED' || (os.status === 'INVOICED' && !['WAITING_PICKUP', 'WAITING_COLLECTION', 'DISPATCHED'].includes(os.status))}
                         >
-                            {/* Técnico marca entrega na expedição */}
-                            {os.status === 'FINISHED' && (isTech || isAdmin) && !os.deliveredToExpeditionAt && (
-                                <button
-                                    onClick={handleMarkDelivered}
-                                    disabled={deliveryLoading}
-                                    className="btn btn-xs bg-green-600 text-white hover:bg-green-700 border-none shadow-sm font-bold uppercase py-2 h-auto mt-2 w-full"
-                                >
-                                    <Truck size={12} /> Confirmar Entrega na Expedição
-                                </button>
-                            )}
-
-                            {os.status === 'FINISHED' && os.deliveredToExpeditionAt && (isTech || isAdmin) && (
-                                <div className="mt-3 p-3 rounded-lg border bg-green-50 border-green-100 text-green-800">
-                                    <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase">
-                                        <CheckCircle size={14} /> Entregue na Expedição
-                                    </div>
-                                    <div className="text-[10px] text-center mt-1 opacity-75">
-                                        {new Date(os.deliveredToExpeditionAt).toLocaleString('pt-BR')}
-                                    </div>
-                                </div>
-                            )}
-
-
                             {/* Commercial Action: Invoice */}
-                            {/* REJECTED não deve ter botão de faturamento - aguarda técnico marcar como FINISHED primeiro */}
-                            {os.status === 'FINISHED' && isCommercial && (
-                                <button 
-                                    onClick={() => handleStatusChange('INVOICED')} 
-                                    disabled={statusLoading || (!os.deliveredToExpeditionAt && !isRejectionFlow && os.type !== 'WARRANTY')}
-                                    className="btn btn-xs bg-teal-600 text-white hover:bg-teal-700 border-none shadow-sm font-bold uppercase py-2 h-auto mt-2 w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                                    title={
-                                        (!os.deliveredToExpeditionAt && !isRejectionFlow && os.type !== 'WARRANTY')
-                                            ? 'Aguardando entrega do técnico na expedição'
-                                            : ''
-                                    }
-                                >
-                                    <FileText size={12} /> {isRejectionFlow ? 'Emitir NF de Retorno' : os.type === 'WARRANTY' ? 'Emitir NF (Garantia)' : 'Emitir NF (Faturar)'}
+                            {(['FINISHED', 'REJECTED'].includes(os.status)) && isCommercial && (
+                                <button onClick={() => handleStatusChange('INVOICED')} disabled={statusLoading} className="btn btn-xs bg-teal-600 text-white hover:bg-teal-700 border-none shadow-sm font-bold uppercase py-2 h-auto mt-2 w-full">
+                                    <FileText size={12} /> {isRejectionFlow ? 'Emitir NF de Retorno' : 'Emitir NF (Faturar)'}
                                 </button>
-                            )}
-
-                            {os.status === 'FINISHED' && isCommercial && !os.deliveredToExpeditionAt && !isRejectionFlow && os.type !== 'WARRANTY' && (
-                                <div className="mt-2 p-2 rounded-lg border bg-yellow-50 border-yellow-100 text-yellow-800 text-[10px] text-center">
-                                    ⚠️ Aguardando técnico entregar equipamento na expedição
-                                </div>
-                            )}
-
-                            {os.status === 'FINISHED' && os.type === 'WARRANTY' && isCommercial && (
-                                <div className="mt-2 p-2 rounded-lg border bg-blue-50 border-blue-100 text-blue-800 text-[10px] text-center">
-                                    ℹ️ OS de Garantia - Pode emitir NF diretamente
-                                </div>
                             )}
 
 
 
                             {/* Ação Final de Despacho (Auto-habilitado no próximo passo) */}
-                            {os.status === 'INVOICED' && !isRejectionFlow && isCommercial && (
+                            {os.status === 'INVOICED' && !isRejectionFlow && !isTech && (
                                 <div className="mt-3 p-3 rounded-lg border bg-indigo-50 border-indigo-100 text-indigo-800">
                                     <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase">
                                         <CheckCircle size={14} /> Faturamento Concluído
                                     </div>
                                     <div className="text-[10px] text-center mt-1 opacity-75">
                                         Libere a expedição no passo abaixo
-                                    </div>
-                                </div>
-                            )}
-                            
-                            {/* Mensagem para Técnicos após Faturamento */}
-                            {os.status === 'INVOICED' && !isRejectionFlow && isTech && (
-                                <div className="mt-3 p-3 rounded-lg border bg-green-50 border-green-100 text-green-800">
-                                    <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase">
-                                        <CheckCircle size={14} /> NF Emitida - Aguardando Comercial
-                                    </div>
-                                    <div className="text-[10px] text-center mt-1 opacity-75">
-                                        O comercial irá escolher o método de coleta (transportadora, balcão ou entrega própria)
                                     </div>
                                 </div>
                             )}
@@ -792,7 +603,7 @@ export default function OsGeneralTab({ os, user }) {
                             isActive={['INVOICED', 'WAITING_COLLECTION', 'DISPATCHED', 'WARRANTY_RETURN', 'WAITING_PICKUP'].includes(os.status)}
                             isLast={true}
                         >
-                            {/* 1. Ações de Despacho (Apenas Comercial escolhe método de coleta) */}
+                            {/* 1. Ações de Despacho (Direto de Faturado ou Aguardando) */}
                             {(os.status === 'INVOICED' || os.status === 'WAITING_COLLECTION' || os.status === 'WAITING_PICKUP') && (isCommercial || isAdmin) && (
                                 <DispatchActions />
                             )}

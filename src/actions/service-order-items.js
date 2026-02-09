@@ -45,11 +45,8 @@ export async function updateServiceOrderStatus(id, newStatus, notes = null, exec
     const os = await prisma.serviceOrder.findUnique({ where: { id: parseInt(id) } });
     if (!os) return { error: 'OS não encontrada.' };
 
-    // Permitir IN_ANALYSIS -> IN_PROGRESS para garantia sem validação de canTransition
-    if (!(newStatus === 'IN_PROGRESS' && os.status === 'IN_ANALYSIS' && os.type === 'WARRANTY')) {
-        if (!canTransition(os.status, newStatus, userRole, os.type)) {
-            return { error: `Você não tem permissão para esta transição (${os.status} -> ${newStatus}) ou ela é inválida.` };
-        }
+    if (!canTransition(os.status, newStatus, userRole)) {
+        return { error: `Você não tem permissão para esta transição (${os.status} -> ${newStatus}) ou ela é inválida.` };
     }
 
     // Validação de Laudo Técnico para finalizar análise
@@ -59,27 +56,9 @@ export async function updateServiceOrderStatus(id, newStatus, notes = null, exec
         }
     }
 
-    // Para OS de garantia, permite pular precificação e ir direto para IN_PROGRESS
-    if (newStatus === 'IN_PROGRESS' && os.status === 'IN_ANALYSIS' && os.type === 'WARRANTY') {
-        // Garantia: pode ir direto de IN_ANALYSIS para IN_PROGRESS (como se fosse aprovado)
-        // Não precisa de validação de diagnóstico/solução para garantia
-    }
-
     const data = { status: newStatus };
     const now = new Date();
     const fromStatus = os.status;
-
-    // Atribuir técnico automaticamente quando inicia análise
-    if (newStatus === 'IN_ANALYSIS' && userRole.startsWith('TECH') && userId) {
-        // Buscar technicianId do usuário
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-            include: { technician: true }
-        });
-        if (user?.technician?.id && !os.technicianId) {
-            data.technicianId = user.technician.id;
-        }
-    }
 
     if (newStatus === 'IN_PROGRESS' && !os.startedAt) {
         data.startedAt = now;
@@ -90,7 +69,6 @@ export async function updateServiceOrderStatus(id, newStatus, notes = null, exec
     if (newStatus === 'APPROVED' && executionDeadline) {
         data.executionDeadline = new Date(executionDeadline);
     }
-    // deliveredToExpeditionAt será setado via ação específica quando técnico entrega na expedição
 
     // Use transaction to ensure both update and history are saved
     await prisma.$transaction(async (tx) => {

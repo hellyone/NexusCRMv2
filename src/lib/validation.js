@@ -194,7 +194,6 @@ export const serviceOrderSchema = z.object({
     serviceReference: z.string().max(500).optional().nullable(),
     externalEquipmentDescription: z.string().max(500).optional().nullable(),
     entryInvoiceNumber: z.string().max(100).optional().nullable(),
-    serviceInvoiceNumber: z.string().max(100).optional().nullable(),
     accessories: z.string().max(500).optional().nullable(),
     equipmentSerialNumber: z.string().max(255).optional().nullable(),
     status: z.string().optional().default('OPEN'),
@@ -215,13 +214,7 @@ export const userSchema = z.object({
     name: z.string().min(1, { message: 'Nome é obrigatório' }).max(255),
     username: z.string().min(3, { message: 'Usuário deve ter no mínimo 3 caracteres' }).max(50),
     email: optionalEmailSchema,
-    password: z.string()
-        .min(8, { message: 'Senha deve ter pelo menos 8 caracteres' })
-        .regex(/[A-Z]/, { message: 'Senha deve conter pelo menos uma letra maiúscula' })
-        .regex(/[a-z]/, { message: 'Senha deve conter pelo menos uma letra minúscula' })
-        .regex(/[0-9]/, { message: 'Senha deve conter pelo menos um número' })
-        .optional()
-        .or(z.literal('')), // Permite string vazia para atualizações sem mudança de senha
+    password: z.string().min(4, { message: 'Senha deve ter pelo menos 4 caracteres' }).optional(), // relaxed min length for 'admin'
     role: z.enum(['ADMIN', 'BACKOFFICE', 'TECH_INTERNAL', 'TECH_FIELD']).optional().default('TECH_FIELD'),
     technicianId: positiveIntegerSchema.optional().nullable(),
     specialties: z.union([

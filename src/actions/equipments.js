@@ -169,19 +169,12 @@ export async function getEquipmentHistory(serialNumber, clientId) {
     if (!serialNumber) return null;
 
     try {
-        // Primeiro busca sem filtro de cliente para encontrar o equipamento
         const equipment = await prisma.equipment.findFirst({
             where: {
-                serialNumber: serialNumber.toUpperCase()
+                serialNumber: serialNumber.toUpperCase(),
+                clientId: clientId ? parseInt(clientId) : undefined
             },
             include: {
-                client: {
-                    select: {
-                        id: true,
-                        name: true,
-                        document: true
-                    }
-                },
                 serviceOrders: {
                     orderBy: { createdAt: 'desc' },
                     take: 5,
@@ -207,36 +200,16 @@ export async function getEquipmentHistory(serialNumber, clientId) {
         let warrantyStatus = {
             inWarranty: false,
             remainingDays: 0,
-            lastOS: lastFinishedOS || null,
-            possibleWarranty: false,
-            daysSinceLastOS: null
+            lastOS: lastFinishedOS || null
         };
 
-        if (lastFinishedOS) {
+        if (lastFinishedOS && lastFinishedOS.warrantyUntil) {
             const now = new Date();
-            
-            // Verificar se está dentro da garantia (warrantyUntil)
-            if (lastFinishedOS.warrantyUntil) {
-                const warrantyDate = new Date(lastFinishedOS.warrantyUntil);
-                if (warrantyDate > now) {
-                    warrantyStatus.inWarranty = true;
-                    const diffTime = Math.abs(warrantyDate - now);
-                    warrantyStatus.remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                }
-            }
-
-            // Verificar possível garantia: se retornou em até 30 dias da última OS
-            // Usa a data de saída (finishedAt) ou abertura (openedAt) da última OS
-            const lastOSDate = lastFinishedOS.finishedAt 
-                ? new Date(lastFinishedOS.finishedAt)
-                : new Date(lastFinishedOS.openedAt);
-            
-            const daysSinceLastOS = Math.floor((now - lastOSDate) / (1000 * 60 * 60 * 24));
-            
-            // Se retornou em até 30 dias, pode ser garantia
-            if (daysSinceLastOS >= 0 && daysSinceLastOS <= 30) {
-                warrantyStatus.possibleWarranty = true;
-                warrantyStatus.daysSinceLastOS = daysSinceLastOS;
+            const warrantyDate = new Date(lastFinishedOS.warrantyUntil);
+            if (warrantyDate > now) {
+                warrantyStatus.inWarranty = true;
+                const diffTime = Math.abs(warrantyDate - now);
+                warrantyStatus.remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             }
         }
 
