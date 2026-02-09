@@ -19,6 +19,11 @@ export async function authenticate(prevState, formData) {
 
         await signIn('credentials', { username, password, redirectTo: '/' });
     } catch (error) {
+        // Next.js redirect (ex.: após login bem-sucedido) — não tratar como erro, deixar o redirect acontecer
+        const isRedirect = typeof error?.digest === 'string' && error.digest.includes('NEXT_REDIRECT');
+        if (isRedirect) {
+            throw error;
+        }
         console.log('Action: Caught error', error);
         if (error instanceof AuthError) {
             console.error('AuthError Context:', error.type);
