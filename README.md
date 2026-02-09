@@ -1,78 +1,104 @@
-# Nexus OS 🚀
+# Nexus CRM v2
 
-Sistema Integrado de Gestão para Assistência Técnica e Manutenção Industrial.
-Desenvolvido com **Next.js 16**, **React 19**, **TailwindCSS** e **Prisma**.
+Sistema integrado de gestão para assistência técnica e ordens de serviço. Desenvolvido com **Next.js 16**, **React 19**, **TailwindCSS**, **Prisma** e preparado para **Vercel** e **Supabase**.
 
-## 📋 Sobre o Projeto
+## Sobre o projeto
 
-O **Nexus OS** é uma plataforma completa para gerenciamento de ordens de serviço (OS), focado em empresas de manutenção industrial e assistência técnica. O sistema centraliza o controle de clientes, equipamentos, estoques, técnicos e serviços financeiros.
+O Nexus CRM v2 centraliza o controle de **ordens de serviço (OS)**, **clientes**, **equipamentos**, **técnicos**, **estoque** e **financeiro**, com fluxo completo desde a abertura da OS até a emissão de NF e liberação para expedição.
 
-### Principais Módulos
+### Principais módulos
 
-*   **🛠️ Ordens de Serviço (OS)**: Abertura inteligente de chamados (Interno/Externo), rastreabilidade por Serial Number, e fluxo de status (Aberto -> Em Andamento -> Finalizado).
-*   **🏭 Gestão de Ativos**: Cadastro detalhado de equipamentos industriais (Torno CNC, Injetoras, PLCs) com histórico de manutenção e garantias.
-*   **📦 Controle de Estoque**: Gestão de peças com controle de entrada/saída, separação por estoque de Venda vs. Consumo e baixa automática em OS.
-*   **👥 CRM e Equipe**: Cadastro completo de clientes (PJ/PF) e gestão de técnicos com controle de especialidades (Eletrônica, Mecânica, etc.).
-*   **📊 Financeiro e KPIs**: Dashboard com indicadores de performance, faturamento e alertas de estoque baixo.
+- **Ordens de Serviço** – Abertura, análise técnica, orçamento, aprovação/reprovação, execução, conclusão e entrega na expedição (com diferenciação entre NF de serviço e NF de retorno).
+- **Comercial** – Laudo comercial, precificação, aprovação do cliente, faturamento e listas (em orçamento, aguardando aprovação, para faturar, finalizadas).
+- **Gestão de ativos** – Cadastro de equipamentos com histórico, fotos (upload local ou Supabase Storage) e detecção de possível retorno em garantia.
+- **Estoque** – Peças com estoque de venda e consumo, movimentações e baixa em OS.
+- **Clientes e técnicos** – Cadastro PJ/PF, endereço por CEP e técnicos com especialidades.
+- **Financeiro** – Dashboard, faturamento e indicadores.
+- **Área do técnico** – Interface para técnicos de campo (`/field`) com abertura rápida de OS e uso em mobile.
 
-## 🚀 Tecnologias Utilizadas
+### Stack
 
-*   **Frontend**: Next.js 16 (App Router), React 19, TailwindCSS, Lucide Icons, Shadcn/UI.
-*   **Backend**: Server Actions (Next.js), Prisma ORM.
-*   **Banco de Dados**: SQLite (Desenvolvimento) / PostgreSQL (Produção - Recomendado).
-*   **Segurança**: NextAuth.js (v5) para autenticação e controle de acesso.
-*   **PDF**: @react-pdf/renderer para geração de laudos técnicos.
+| Camada      | Tecnologia                          |
+|------------|--------------------------------------|
+| Frontend   | Next.js 16 (App Router), React 19, TailwindCSS, Lucide |
+| Backend    | Server Actions, Prisma ORM           |
+| Banco      | SQLite (dev) / PostgreSQL via Supabase (produção) |
+| Auth       | NextAuth.js v5 (credentials)         |
+| Deploy     | Vercel                               |
+| Storage    | Supabase Storage (fotos de equipamentos em produção) |
+| PDF        | @react-pdf/renderer (laudos técnicos) |
 
-## ⚙️ Pré-requisitos
+## Pré-requisitos
 
-*   Node.js 20.x ou superior.
-*   NPM ou PNPM.
+- **Node.js** 20.x ou superior  
+- **npm** ou pnpm  
 
-## 🔧 Instalação e Configuração
+## Instalação e execução local
 
-1.  **Clone o repositório:**
-    ```bash
-    git clone https://github.com/hellyone/nexus-os.git
-    cd nexus-os
-    ```
+1. **Clone o repositório**
+   ```bash
+   git clone https://github.com/hellyone/NexusCRMv2.git
+   cd NexusCRMv2
+   ```
 
-2.  **Instale as dependências:**
-    ```bash
-    npm install
-    ```
+2. **Instale as dependências**
+   ```bash
+   npm install
+   ```
 
-3.  **Configuração de Ambiente:**
-    Crie um arquivo `.env` na raiz do projeto com as chaves necessárias (veja `.env.example` se houver, ou use o template abaixo):
-    ```env
-    DATABASE_URL="file:./dev.db"
-    AUTH_SECRET="sua-chave-secreta-aqui"
-    NEXT_PUBLIC_APP_URL="http://localhost:3000"
-    ```
+3. **Configure o ambiente**
+   Copie `.env.example` para `.env` e ajuste se necessário. Para desenvolvimento local com SQLite:
+   ```env
+   DATABASE_URL="file:./dev.db"
+   AUTH_SECRET="uma-chave-secreta-longa-e-aleatoria"
+   ```
 
-4.  **Configuração do Banco de Dados:**
-    ```bash
-    npx prisma generate
-    npx prisma db push
-    ```
+4. **Banco de dados**
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   npx prisma db seed
+   ```
 
-5.  **Executar o Projeto:**
-    ```bash
-    npm run dev
-    ```
-    Acesse [http://localhost:3000](http://localhost:3000).
+5. **Inicie o projeto**
+   ```bash
+   npm run dev
+   ```
+   Acesse [http://localhost:3000](http://localhost:3000).
 
-## 📱 Funcionalidades Específicas
+### Acesso padrão (após o seed)
 
-### 🔧 Modo Assistência Técnica (Campo)
-O sistema possui uma interface otimizada para técnicos de campo (`/field`), com foco em:
-*   Abertura rápida de OS.
-*   Preenchimento inteligente de endereço (CEP).
-*   Funcionamento otimizado para mobile.
+- **Usuário:** `admin`  
+- **Senha:** `password`  
 
-### 📄 Relatórios Técnicos
-Geração automática de laudos técnicos em PDF com diagnóstico, solução, peças utilizadas e valores.
+Altere a senha após o primeiro acesso em produção.
 
-## 📞 Suporte ou Contato
+## Deploy (Vercel + Supabase)
 
-Desenvolvido por **Guilherme**.
-Para dúvidas ou suporte, entre em contato via issues no GitHub.
+O deploy em produção é feito na **Vercel**, com banco e arquivos no **Supabase** (PostgreSQL + Storage). O guia completo está em:
+
+**[VERCEL_SUPABASE_MIGRATION.md](./VERCEL_SUPABASE_MIGRATION.md)**
+
+Resumo:
+
+1. Criar projeto no [Supabase](https://supabase.com) e anotar a **connection string (pooler, porta 6543)** e as chaves de API.
+2. Criar o bucket `uploads` no Storage (para fotos de equipamentos).
+3. Importar o repositório na [Vercel](https://vercel.com) e configurar as variáveis de ambiente (`DATABASE_URL`, `AUTH_SECRET`, `NEXTAUTH_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`).
+4. Rodar migrações e seed contra o banco Supabase a partir da sua máquina:
+   ```bash
+   npx prisma migrate deploy
+   npx prisma db seed
+   ```
+
+## Scripts úteis
+
+| Comando              | Descrição                    |
+|----------------------|------------------------------|
+| `npm run dev`        | Servidor de desenvolvimento  |
+| `npm run build`      | Build de produção             |
+| `npm run start`      | Inicia o app em modo produção |
+| `npx prisma studio`  | Abre interface do banco       |
+
+## Contato
+
+Desenvolvido por **Guilherme**. Dúvidas ou sugestões: abra uma [issue](https://github.com/hellyone/NexusCRMv2/issues) no repositório.
